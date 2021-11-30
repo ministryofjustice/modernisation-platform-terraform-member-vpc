@@ -26,8 +26,8 @@ locals {
   # Protected subnets
   # get protected subnet cidr from spare /23 in first defined subnet-set for the vpc
   protected_cidr = {
-    for index, item in var.subnet_sets:
-      index => cidrsubnet(item, 2, 3)
+    for index, item in var.subnet_sets :
+    index => cidrsubnet(item, 2, 3)
     if index == "general"
   }
 
@@ -44,7 +44,7 @@ locals {
     "${subnet.key}-${subnet.az}" => subnet
   }
 
-# Transit Gateway subnets
+  # Transit Gateway subnets
 
   transit_gateway_cidr = cidrsubnet(local.protected_cidr["general"], 2, 3)
 
@@ -239,7 +239,7 @@ resource "aws_default_security_group" "default" {
 
 resource "random_id" "flow_logs" {
 
-keepers = {
+  keepers = {
     # Generate a new id each time we regenerate a vpc
     vpc_id = aws_vpc.vpc.cidr_block
   }
@@ -269,9 +269,9 @@ resource "aws_flow_log" "cloudwatch" {
 }
 
 resource "aws_vpc_ipv4_cidr_block_association" "subnet_sets" {
-    for_each = {
-      for k,v in tomap(var.subnet_sets):
-      k => v
+  for_each = {
+    for k, v in tomap(var.subnet_sets) :
+    k => v
     if k != "general"
   }
 
