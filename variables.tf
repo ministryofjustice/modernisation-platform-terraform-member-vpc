@@ -1,11 +1,3 @@
-variable "transit" {
-  type = string
-}
-
-variable "protected" {
-  type = string
-}
-
 variable "subnet_sets" {
   type = map(any)
 }
