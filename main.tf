@@ -166,7 +166,7 @@ locals {
 
   # SES Endpoints (Simple Email Service)
   ses_endpoints = [
-  "com.amazonaws.eu-west-2.email",
+    "com.amazonaws.eu-west-2.email",
   "com.amazonaws.eu-west-2.email-smtp"]
 
   # SSM Endpoints (Systems Session Manager)
