@@ -424,7 +424,7 @@ resource "aws_network_acl_rule" "allow_internet_egress_private_2" {
 }
 
 resource "aws_network_acl_rule" "allow_internet_ingress_private" {
-  checkov:skip=CKV_AWS_231: "NACL encompasses 3389 in range"
+  #checkov:skip=CKV_AWS_231: "NACL encompasses 3389 in range"
   for_each = toset(local.distinct_subnets_by_key_type_private)
 
   network_acl_id = aws_network_acl.default[each.value].id
