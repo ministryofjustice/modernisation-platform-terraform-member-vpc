@@ -619,6 +619,17 @@ resource "aws_security_group_rule" "endpoints_ingress_2" {
   cidr_blocks       = [each.value]
   security_group_id = aws_security_group.endpoints.id
 }
+resource "aws_security_group_rule" "endpoints_ingress_3" {
+  for_each = var.subnet_sets
+
+  description       = "Allow inbound SMTP TLS"
+  type              = "ingress"
+  from_port         = 587
+  to_port           = 587
+  protocol          = "tcp"
+  cidr_blocks       = [each.value]
+  security_group_id = aws_security_group.endpoints.id
+}
 
 # SES Endpoint
 resource "aws_vpc_endpoint" "ses_interfaces" {
