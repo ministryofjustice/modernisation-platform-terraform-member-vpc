@@ -420,6 +420,7 @@ resource "aws_network_acl_rule" "allow_internet_egress_private_2" {
 }
 
 resource "aws_network_acl_rule" "allow_internet_ingress_private" {
+  #checkov:skip=CKV_AWS_231:"port 3389 included in range allowing inbound traffic"
   for_each = toset(local.distinct_subnets_by_key_type_private)
 
   network_acl_id = aws_network_acl.default[each.value].id
@@ -600,6 +601,30 @@ resource "aws_security_group_rule" "endpoints_ingress_1" {
   type              = "ingress"
   from_port         = 443
   to_port           = 443
+  protocol          = "tcp"
+  cidr_blocks       = [each.value]
+  security_group_id = aws_security_group.endpoints.id
+
+}
+resource "aws_security_group_rule" "endpoints_ingress_2" {
+  for_each = var.subnet_sets
+
+  description       = "Allow inbound SMTP"
+  type              = "ingress"
+  from_port         = 25
+  to_port           = 25
+  protocol          = "tcp"
+  cidr_blocks       = [each.value]
+  security_group_id = aws_security_group.endpoints.id
+
+}
+resource "aws_security_group_rule" "endpoints_ingress_3" {
+  for_each = var.subnet_sets
+
+  description       = "Allow inbound HTTPS"
+  type              = "ingress"
+  from_port         = 587
+  to_port           = 587
   protocol          = "tcp"
   cidr_blocks       = [each.value]
   security_group_id = aws_security_group.endpoints.id
