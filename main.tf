@@ -164,6 +164,10 @@ locals {
     "${rule.cidr}-${rule.egress}-${rule.action}-${rule.protocol}-${rule.from_port}-${rule.to_port}-${rule.rule_num}" => rule
   }
 
+  # SES Endpoints (Simple Email Service)
+  ses_endpoints = [
+    "com.amazonaws.eu-west-2.email",
+  "com.amazonaws.eu-west-2.email-smtp"]
 
   # SSM Endpoints (Systems Session Manager)
   ssm_endpoints = [
@@ -420,6 +424,7 @@ resource "aws_network_acl_rule" "allow_internet_egress_private_2" {
 }
 
 resource "aws_network_acl_rule" "allow_internet_ingress_private" {
+  #checkov:skip=CKV_AWS_231: "NACL encompasses 3389 in range"
   for_each = toset(local.distinct_subnets_by_key_type_private)
 
   network_acl_id = aws_network_acl.default[each.value].id
@@ -603,8 +608,53 @@ resource "aws_security_group_rule" "endpoints_ingress_1" {
   protocol          = "tcp"
   cidr_blocks       = [each.value]
   security_group_id = aws_security_group.endpoints.id
-
 }
+resource "aws_security_group_rule" "endpoints_ingress_2" {
+  for_each = var.subnet_sets
+
+  description       = "Allow inbound SMTP"
+  type              = "ingress"
+  from_port         = 25
+  to_port           = 25
+  protocol          = "tcp"
+  cidr_blocks       = [each.value]
+  security_group_id = aws_security_group.endpoints.id
+}
+resource "aws_security_group_rule" "endpoints_ingress_3" {
+  for_each = var.subnet_sets
+
+  description       = "Allow inbound SMTP TLS"
+  type              = "ingress"
+  from_port         = 587
+  to_port           = 587
+  protocol          = "tcp"
+  cidr_blocks       = [each.value]
+  security_group_id = aws_security_group.endpoints.id
+}
+
+# SES Endpoint
+resource "aws_vpc_endpoint" "ses_interfaces" {
+  for_each = toset(local.ses_endpoints)
+
+  vpc_id            = aws_vpc.vpc.id
+  service_name      = each.value
+  vpc_endpoint_type = "Interface"
+  subnet_ids = [
+    for az in local.availability_zones :
+    aws_subnet.protected["protected-${az}"].id
+  ]
+  security_group_ids = [aws_security_group.endpoints.id]
+
+  private_dns_enabled = true
+
+  tags = merge(
+    var.tags_common,
+    {
+      Name = "${var.tags_prefix}-${each.key}"
+    }
+  )
+}
+
 # SSM Endpoints
 resource "aws_vpc_endpoint" "ssm_interfaces" {
   for_each = toset(local.merged_endpoint_list)
