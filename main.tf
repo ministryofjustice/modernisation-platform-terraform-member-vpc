@@ -605,6 +605,30 @@ resource "aws_security_group_rule" "endpoints_ingress_1" {
   security_group_id = aws_security_group.endpoints.id
 
 }
+resource "aws_security_group_rule" "endpoints_ingress_2" {
+  for_each = var.subnet_sets
+
+  description       = "Allow inbound SMTP"
+  type              = "ingress"
+  from_port         = 25
+  to_port           = 25
+  protocol          = "tcp"
+  cidr_blocks       = [each.value]
+  security_group_id = aws_security_group.endpoints.id
+
+}
+resource "aws_security_group_rule" "endpoints_ingress_3" {
+  for_each = var.subnet_sets
+
+  description       = "Allow inbound HTTPS"
+  type              = "ingress"
+  from_port         = 587
+  to_port           = 587
+  protocol          = "tcp"
+  cidr_blocks       = [each.value]
+  security_group_id = aws_security_group.endpoints.id
+
+}
 # SSM Endpoints
 resource "aws_vpc_endpoint" "ssm_interfaces" {
   for_each = toset(local.merged_endpoint_list)
