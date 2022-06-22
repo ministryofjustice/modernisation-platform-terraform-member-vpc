@@ -503,6 +503,21 @@ resource "aws_network_acl_rule" "local_nacl_rules_for_protected_ingress" {
   from_port      = "443"
   to_port        = "443"
 }
+resource "aws_network_acl_rule" "local_nacl_rules_for_protected_ingress_smtp-tls" {
+  for_each = {
+    for index, subnet in keys(var.subnet_sets) :
+    index => var.subnet_sets[subnet]
+  }
+
+  network_acl_id = aws_network_acl.subnets_protected.id
+  rule_number    = ((each.key + 1) * 10) + 201
+  egress         = false
+  protocol       = "tcp"
+  rule_action    = "allow"
+  cidr_block     = each.value
+  from_port      = "587"
+  to_port        = "587"
+}
 resource "aws_network_acl_rule" "local_nacl_rules_for_protected_egress" {
   for_each = {
     for index, subnet in keys(var.subnet_sets) :
@@ -621,7 +636,7 @@ resource "aws_security_group_rule" "endpoints_ingress_2" {
 resource "aws_security_group_rule" "endpoints_ingress_3" {
   for_each = var.subnet_sets
 
-  description       = "Allow inbound HTTPS"
+  description       = "Allow inbound SMTP-TLS"
   type              = "ingress"
   from_port         = 587
   to_port           = 587
