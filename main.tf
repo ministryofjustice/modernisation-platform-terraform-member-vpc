@@ -246,6 +246,7 @@ resource "random_id" "flow_logs" {
 
   byte_length = 4
 }
+#tfsec:ignore:aws-cloudwatch-log-group-customer-key
 resource "aws_cloudwatch_log_group" "default" {
   #checkov:skip=CKV_AWS_158:Temporarily skip KMS encryption check while logging solution is being updated
   name              = "${var.tags_prefix}-vpc-flow-logs-${random_id.flow_logs.hex}"
@@ -532,6 +533,21 @@ resource "aws_network_acl_rule" "local_nacl_rules_for_protected_egress" {
   cidr_block     = each.value
   from_port      = "1024"
   to_port        = "65535"
+}
+resource "aws_network_acl_rule" "local_nacl_rules_for_protected_egress_ssh" {
+  for_each = {
+    for index, subnet in keys(var.subnet_sets) :
+    index => var.subnet_sets[subnet]
+  }
+
+  network_acl_id = aws_network_acl.subnets_protected.id
+  rule_number    = ((each.key + 1) * 10) + 201
+  egress         = true
+  protocol       = "tcp"
+  rule_action    = "allow"
+  cidr_block     = each.value
+  from_port      = "22"
+  to_port        = "22"
 }
 
 # VPC: Internet Gateway
