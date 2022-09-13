@@ -48,6 +48,23 @@ output "non_tgw_subnet_arns_by_subnetset" {
 output "expanded_worker_subnets_assocation" {
   value = local.expanded_worker_subnets_assocation
 }
+
 output "expanded_worker_subnets_with_keys" {
   value = local.expanded_worker_subnets_with_keys
+}
+
+output "data_subnet_ids" {
+  value = [for v in aws_subnet.subnets : v.id if(length(regexall("(?:data)", v.tags.Name)) > 0)]
+}
+
+output "private_subnet_ids" {
+  value = [for v in aws_subnet.subnets : v.id if(length(regexall("(?:private)", v.tags.Name)) > 0)]
+}
+
+output "public_subnet_ids" {
+  value = [for v in aws_subnet.subnets : v.id if(length(regexall("(?:public)", v.tags.Name)) > 0)]
+}
+
+output "protected_subnet_ids" {
+  value = [for v in aws_subnet.protected : v.id if(length(regexall("(?:protected)", v.tags.Name)) > 0)]
 }
