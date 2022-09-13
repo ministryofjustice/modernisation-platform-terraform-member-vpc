@@ -45,39 +45,6 @@ output "non_tgw_subnet_arns_by_subnetset" {
   }
 }
 
-
-locals {
-  network_acl_refs = { for value in aws_network_acl.default :
-
-    value.tags.Name =>
-    {
-      arn  = value.arn
-      id   = value.id
-      name = value.tags.Name
-    }
-  }
-
-  data_network_acl_for_endpoints = flatten([
-    for value in aws_network_acl.default : [
-      for cidr_index, cidr in aws_vpc_endpoint.ssm_s3.cidr_blocks : {
-        id         = value.id
-        name       = value.tags.Name
-        cidr       = cidr
-        cidr_index = cidr_index
-      }
-      if substr(value.tags.Name, -4, -1) == "data"
-    ]
-  ])
-}
-
-output "nacl_refs" {
-  value = local.network_acl_refs
-}
-
-output "data_network_acl_for_endpoints" {
-  value = local.data_network_acl_for_endpoints
-}
-
 output "expanded_worker_subnets_assocation" {
   value = local.expanded_worker_subnets_assocation
 }
