@@ -303,6 +303,18 @@ resource "aws_route" "public_internet_gateway" {
   gateway_id             = aws_internet_gateway.default.id
 }
 
+resource "aws_route" "transit_gateway" {
+  for_each = {
+    for key, route_table in aws_route_table.route_tables :
+    key => route_table
+    if substr(key, length(key) - 6, length(key)) != "public"
+  }
+
+  route_table_id         = aws_route_table.route_tables[each.key].id
+  destination_cidr_block = "0.0.0.0/0"
+  transit_gateway_id     = var.transit_gateway_id
+}
+
 resource "aws_route_table" "protected" {
 
   vpc_id = aws_vpc.vpc.id
