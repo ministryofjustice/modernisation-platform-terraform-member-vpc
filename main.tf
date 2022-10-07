@@ -81,20 +81,6 @@ locals {
     if subnet.key != "transit-gateway"
   ])
 
-  # Distinct subnets by key type - Private
-  distinct_subnets_by_key_type_private = distinct([
-    for subnet in local.all_subnets_with_keys :
-    "${subnet.key}-${subnet.type}"
-    if subnet.type == "private"
-  ])
-
-  # Distinct subnets by key type - Public
-  distinct_subnets_by_key_type_public = distinct([
-    for subnet in local.all_subnets_with_keys :
-    "${subnet.key}-${subnet.type}"
-    if subnet.type == "public"
-  ])
-
   all_distinct_route_tables_with_keys = {
     for rt in local.all_distinct_route_tables :
     rt => rt
