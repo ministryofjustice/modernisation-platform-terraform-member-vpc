@@ -74,13 +74,6 @@ locals {
     # local.expanded_protected_subnets_with_keys
   )
 
-  # Distinct subnets by key type not including Transit Gateway subnets
-  distinct_subnets_by_key_type = distinct([
-    for subnet in local.all_subnets_with_keys :
-    "${subnet.key}-${subnet.type}"
-    if subnet.key != "transit-gateway"
-  ])
-
   all_distinct_route_tables_with_keys = {
     for rt in local.all_distinct_route_tables :
     rt => rt
