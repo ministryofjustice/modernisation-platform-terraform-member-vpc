@@ -74,27 +74,6 @@ locals {
     # local.expanded_protected_subnets_with_keys
   )
 
-  # Distinct subnets by key type not including Transit Gateway subnets
-  distinct_subnets_by_key_type = distinct([
-    for subnet in local.all_subnets_with_keys :
-    "${subnet.key}-${subnet.type}"
-    if subnet.key != "transit-gateway"
-  ])
-
-  # Distinct subnets by key type - Private
-  distinct_subnets_by_key_type_private = distinct([
-    for subnet in local.all_subnets_with_keys :
-    "${subnet.key}-${subnet.type}"
-    if subnet.type == "private"
-  ])
-
-  # Distinct subnets by key type - Public
-  distinct_subnets_by_key_type_public = distinct([
-    for subnet in local.all_subnets_with_keys :
-    "${subnet.key}-${subnet.type}"
-    if subnet.type == "public"
-  ])
-
   all_distinct_route_tables_with_keys = {
     for rt in local.all_distinct_route_tables :
     rt => rt
@@ -301,6 +280,18 @@ resource "aws_route" "public_internet_gateway" {
   route_table_id         = aws_route_table.route_tables[each.key].id
   destination_cidr_block = "0.0.0.0/0"
   gateway_id             = aws_internet_gateway.default.id
+}
+
+resource "aws_route" "transit_gateway" {
+  for_each = {
+    for key, route_table in aws_route_table.route_tables :
+    key => route_table
+    if substr(key, length(key) - 6, length(key)) != "public"
+  }
+
+  route_table_id         = aws_route_table.route_tables[each.key].id
+  destination_cidr_block = "0.0.0.0/0"
+  transit_gateway_id     = var.transit_gateway_id
 }
 
 resource "aws_route_table" "protected" {
