@@ -68,3 +68,11 @@ output "public_subnet_ids" {
 output "protected_subnet_ids" {
   value = [for v in aws_subnet.protected : v.id if(length(regexall("(?:protected)", v.tags.Name)) > 0)]
 }
+
+output "private_route_tables" {
+  value = {
+    for key, value in local.all_distinct_route_tables_with_keys :
+    key => aws_route_table.route_tables[key].id
+    if substr(key, length(key) - 6, length(key)) != "public"
+  }
+}
