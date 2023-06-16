@@ -404,11 +404,3 @@ resource "aws_vpc_endpoint" "ssm_s3" {
     }
   )
 }
-
-output "private_route_tables" {
-  value = {
-    for key, value in local.all_distinct_route_tables_with_keys :
-    key => aws_route_table.route_tables[key].id
-    if substr(key, length(key) - 6, length(key)) != "public"
-  }
-}
