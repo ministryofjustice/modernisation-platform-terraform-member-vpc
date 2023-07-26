@@ -8,6 +8,8 @@ on:
       - '**.md'
       - '.github/workflows/documentation.yml'
 
+permissions: {}
+
 jobs:
   docs:
     permissions:
