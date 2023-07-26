@@ -364,7 +364,7 @@ resource "aws_security_group_rule" "endpoints_ingress_3" {
 
 }
 
-resource "aws_security_group_rule" "endpoints_ingress_3" {
+resource "aws_security_group_rule" "endpoints_ingress_4" {
   for_each = var.subnet_sets
 
   description       = "Allow inbound Redshift"
