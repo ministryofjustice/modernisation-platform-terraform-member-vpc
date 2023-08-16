@@ -32,15 +32,16 @@ output "non_tgw_subnet_arns_by_set" {
 }
 
 output "non_tgw_subnet_arns_by_subnetset" {
-  value = {
+  value = merge({
     for set, cidr in var.subnet_sets : set =>
     {
       for key, subnet in local.expanded_worker_subnets_assocation :
       "${key}-${cidr}" => aws_subnet.subnets["${subnet.key}-${subnet.type}-${subnet.az}"].arn
       if substr(subnet.key, 0, length(set)) == set
-
     }
-  }
+  },
+    { "protected" = { for key, subnet in aws_subnet.protected : key => subnet.arn }
+  })
 }
 
 output "expanded_worker_subnets_assocation" {
