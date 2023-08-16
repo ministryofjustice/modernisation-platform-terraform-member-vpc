@@ -15,8 +15,8 @@ output "tgw_subnet_ids" {
 output "non_tgw_subnet_arns" {
   description = "Non-Transit Gateway and Protected subnet ARNs"
   value = concat(
-    [ for key, subnet in aws_subnet.subnets : subnet.arn if substr(key, 0, 15) != "transit-gateway" ],
-    [ for key, subnet in aws_subnet.protected : subnet.arn if substr(key, 0, 15) != "transit-gateway" ]
+    [for key, subnet in aws_subnet.subnets : subnet.arn if substr(key, 0, 15) != "transit-gateway"],
+    [for key, subnet in aws_subnet.protected : subnet.arn if substr(key, 0, 15) != "transit-gateway"]
   )
 }
 
@@ -39,7 +39,7 @@ output "non_tgw_subnet_arns_by_subnetset" {
       "${key}-${cidr}" => aws_subnet.subnets["${subnet.key}-${subnet.type}-${subnet.az}"].arn
       if substr(subnet.key, 0, length(set)) == set
     }
-  },
+    },
     { "protected" = { for key, subnet in aws_subnet.protected : key => subnet.arn }
   })
 }
