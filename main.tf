@@ -172,6 +172,7 @@ resource "random_id" "flow_logs" {
   byte_length = 4
 }
 
+#tfsec:ignore:aws-cloudwatch-log-group-customer-key
 resource "aws_cloudwatch_log_group" "default" {
   #checkov:skip=CKV_AWS_158:"Temporarily skip KMS encryption check while logging solution is being updated"
   name              = "${var.tags_prefix}-vpc-flow-logs-${random_id.flow_logs.hex}"
