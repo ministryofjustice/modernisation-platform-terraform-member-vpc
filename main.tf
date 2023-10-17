@@ -173,7 +173,7 @@ resource "random_id" "flow_logs" {
 }
 
 resource "aws_cloudwatch_log_group" "default" {
-  #checkov:skip=CKV_AWS_158:Temporarily skip KMS encryption check while logging solution is being updated
+  #checkov:skip=CKV_AWS_158:"Temporarily skip KMS encryption check while logging solution is being updated"
   name              = "${var.tags_prefix}-vpc-flow-logs-${random_id.flow_logs.hex}"
   retention_in_days = 731 # 0 = never expire
 }
