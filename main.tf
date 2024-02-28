@@ -315,19 +315,23 @@ resource "aws_iam_role_policy" "xsiam_kinesis_firehose_role_policy" {
     Version = "2012-10-17"
     Statement = [
       {
+        Sid = "log-access"
+        Effect   = "Allow"
         Action = [
           "logs:DescribeLogGroups",
           "logs:DescribeLogStreams",
           "logs:GetLogEvents"
         ]
-        Effect   = "Allow"
         Resource = "*"
+      },
+      {
+        Sid = "secretsmanager"
+        Effect = "Allow"
         Action = [
           "secretsmanager:GetSecretValue",
           "secretsmanager:DescribeSecret",
           "secretsmanager:ListSecretVersionIds"
         ]
-        Effect = "Allow"
         Resource = "${secret_version_arn}"
       }
     ]
