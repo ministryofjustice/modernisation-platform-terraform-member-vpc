@@ -210,6 +210,7 @@ resource "aws_flow_log" "cloudwatch" {
 
 locals {
 
+  environment = "development"
   mp_prefix = "mod_platform"
   endpoint_url = "https://api-justiceukpreprod.xdr.uk.paloaltonetworks.com/logs/v1/aws"
   access_key = ""
@@ -218,6 +219,7 @@ locals {
     application = "modernisation_platform"
   }
 
+  secret_version_arn = "arn:aws:secretsmanager:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:secret:${data.aws_secretsmanager_secret.xsiam_preprod_network_secret.name}-${data.aws_secretsmanager_secret_version.xsiam_preprod_network_secret.version_stage}"
 
 }
 
@@ -266,8 +268,10 @@ resource "aws_kinesis_firehose_delivery_stream" "firehose_stream" {
   }
 }
 
+# Using an environment local for now as S3 bucket names are global
+
 resource "aws_s3_bucket" "xsiam_firehose_bucket" {
-  bucket = "${var.tags_prefix}-xsiam-firehose"
+  bucket = "${var.tags_prefix}-${local.environment}-xsiam-firehose"
   tags   = try(local.tags,{})
 }
 
@@ -318,9 +322,17 @@ resource "aws_iam_role_policy" "xsiam_kinesis_firehose_role_policy" {
         ]
         Effect   = "Allow"
         Resource = "*"
+        Action = [
+          "secretsmanager:GetSecretValue",
+          "secretsmanager:DescribeSecret",
+          "secretsmanager:ListSecretVersionIds"
+        ]
+        Effect = "Allow"
+        Resource = "${secret_version_arn}"
       }
     ]
-  })
+   }
+  )
 }
 
 resource "aws_iam_role_policy_attachment" "kinesis_firehose_error_log_role_attachment" {
