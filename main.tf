@@ -210,10 +210,10 @@ resource "aws_flow_log" "cloudwatch" {
 
 locals {
 
-  environment = "development"
-  mp_prefix = "mod_platform"
+  environment  = "development"
+  mp_prefix    = "mod_platform"
   endpoint_url = "https://api-justiceukpreprod.xdr.uk.paloaltonetworks.com/logs/v1/aws"
-  access_key = ""
+  access_key   = ""
 
   tags = {
     application = "modernisation_platform"
@@ -248,7 +248,7 @@ resource "aws_kinesis_firehose_delivery_stream" "firehose_stream" {
   name        = "${var.tags_prefix}-xsiam-delivery-stream"
   destination = "http_endpoint"
 
-   tags = try(local.tags,{})
+  tags = try(local.tags, {})
 
   http_endpoint_configuration {
     url                = local.endpoint_url
@@ -268,8 +268,8 @@ resource "aws_kinesis_firehose_delivery_stream" "firehose_stream" {
     s3_configuration {
       role_arn           = aws_iam_role.xsiam_kinesis_firehose_role.arn
       bucket_arn         = aws_s3_bucket.xsiam_firehose_bucket.arn
-      buffering_size        = 10
-      buffering_interval    = 400
+      buffering_size     = 10
+      buffering_interval = 400
       compression_format = "GZIP"
     }
 
@@ -278,7 +278,7 @@ resource "aws_kinesis_firehose_delivery_stream" "firehose_stream" {
 
       common_attributes {
         name  = "business_area"
-        value = "${var.tags_prefix}"
+        value = var.tags_prefix
       }
     }
 
@@ -289,12 +289,12 @@ resource "aws_kinesis_firehose_delivery_stream" "firehose_stream" {
 
 resource "aws_s3_bucket" "xsiam_firehose_bucket" {
   bucket = "${var.tags_prefix}-${local.environment}-xsiam-firehose"
-  tags   = try(local.tags,{})
+  tags   = try(local.tags, {})
 }
 
 resource "aws_cloudwatch_log_group" "xsiam_delivery_group" {
   name              = "${var.tags_prefix}-xsiam-delivery-stream-${local.mp_prefix}"
-  tags              = try(local.tags,{})
+  tags              = try(local.tags, {})
   retention_in_days = 90
 }
 
@@ -321,7 +321,7 @@ resource "aws_iam_role" "xsiam_kinesis_firehose_role" {
     ]
   })
 
-  tags = try(local.tags,{})
+  tags = try(local.tags, {})
 }
 
 resource "aws_iam_role_policy" "xsiam_kinesis_firehose_role_policy" {
@@ -332,8 +332,8 @@ resource "aws_iam_role_policy" "xsiam_kinesis_firehose_role_policy" {
     Version = "2012-10-17"
     Statement = [
       {
-        Sid = "log-access"
-        Effect   = "Allow"
+        Sid    = "log-access"
+        Effect = "Allow"
         Action = [
           "logs:DescribeLogGroups",
           "logs:DescribeLogStreams",
@@ -342,7 +342,7 @@ resource "aws_iam_role_policy" "xsiam_kinesis_firehose_role_policy" {
         Resource = "*"
       },
       {
-        Sid = "secretsmanager"
+        Sid    = "secretsmanager"
         Effect = "Allow"
         Action = [
           "secretsmanager:GetSecretValue",
@@ -352,7 +352,7 @@ resource "aws_iam_role_policy" "xsiam_kinesis_firehose_role_policy" {
         Resource = "${secret_version_arn}"
       }
     ]
-   }
+    }
   )
 }
 
@@ -379,7 +379,7 @@ resource "aws_iam_policy" "xsiam_kinesis_firehose_error_log_policy" {
     ]
   })
 
-  tags = try(local.tags,{})
+  tags = try(local.tags, {})
 }
 
 
@@ -415,7 +415,7 @@ resource "aws_iam_policy" "s3_kinesis_xsiam_policy" {
     ]
   })
 
-  tags = try(local.tags,{})
+  tags = try(local.tags, {})
 }
 
 
@@ -429,8 +429,8 @@ resource "aws_cloudwatch_log_subscription_filter" "nacs_server_xsiam_subscriptio
 }
 
 resource "aws_iam_role" "this" {
-  name_prefix        = "${var.tags_prefix}"
-  tags               = try(local.tags,{})
+  name_prefix        = var.tags_prefix
+  tags               = try(local.tags, {})
   assume_role_policy = <<EOF
 {
   "Version": "2012-10-17",
@@ -450,7 +450,7 @@ EOF
 
 resource "aws_iam_policy" "put_record" {
   name_prefix = "${var.tags_prefix}-put_record"
-  tags        = try(local.tags,{})
+  tags        = try(local.tags, {})
   policy      = <<-EOF
 {
     "Version": "2012-10-17",
