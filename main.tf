@@ -195,6 +195,278 @@ resource "aws_flow_log" "cloudwatch" {
   )
 }
 
+
+
+
+
+
+####### START OF FIREHOSE SOURCE
+
+
+
+
+
+# Sharing log data with SecOps via Firehose
+
+locals {
+
+  mp_prefix = "mod_platform"
+  endpoint_url = "https://api-justiceukpreprod.xdr.uk.paloaltonetworks.com/logs/v1/aws"
+  access_key = ""
+
+  tags = {
+    application = "modernisation_platform"
+  }
+
+
+}
+
+data "aws_secretsmanager_secret_version" "xsiam_preprod_network_secret" {
+  secret_id = "xsiam_preprod_network_secret"
+}
+
+resource "aws_kinesis_firehose_delivery_stream" "firehose_stream" {
+  name        = "${var.tags_prefix}-xsiam-delivery-stream"
+  destination = "http_endpoint"
+
+   tags = try(local.tags,{})
+
+  http_endpoint_configuration {
+    url                = local.endpoint_url
+    name               = local.mp_prefix
+    access_key         = data.aws_secretsmanager_secret_version.xsiam_preprod_network_secret.secret_string
+    buffering_size     = 5
+    buffering_interval = 300
+    role_arn           = aws_iam_role.xsiam_kinesis_firehose_role.arn
+    s3_backup_mode     = "FailedDataOnly"
+
+    cloudwatch_logging_options {
+      enabled         = true
+      log_group_name  = aws_cloudwatch_log_group.xsiam_delivery_group.name
+      log_stream_name = aws_cloudwatch_log_stream.xsiam_delivery_stream.name
+    }
+
+    s3_configuration {
+      role_arn           = aws_iam_role.xsiam_kinesis_firehose_role.arn
+      bucket_arn         = aws_s3_bucket.xsiam_firehose_bucket.arn
+      buffering_size        = 10
+      buffering_interval    = 400
+      compression_format = "GZIP"
+    }
+
+    request_configuration {
+      content_encoding = "GZIP"
+
+      common_attributes {
+        name  = "business_area"
+        value = "${var.tags_prefix}"
+      }
+    }
+
+  }
+}
+
+resource "aws_s3_bucket" "xsiam_firehose_bucket" {
+  bucket = "${var.tags_prefix}-xsiam-firehose"
+  tags   = try(local.tags,{})
+}
+
+resource "aws_cloudwatch_log_group" "xsiam_delivery_group" {
+  name              = "${var.tags_prefix}-xsiam-delivery-stream-${local.mp_prefix}"
+  tags              = try(local.tags,{})
+  retention_in_days = 90
+}
+
+resource "aws_cloudwatch_log_stream" "xsiam_delivery_stream" {
+  name           = "${var.tags_prefix}-errors"
+  log_group_name = aws_cloudwatch_log_group.xsiam_delivery_group.name
+}
+
+
+
+resource "aws_iam_role" "xsiam_kinesis_firehose_role" {
+
+  name = "${var.tags_prefix}-xsiam-delivery-stream-role"
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Principal = {
+          Service = "firehose.amazonaws.com"
+        }
+      }
+    ]
+  })
+
+  tags = try(local.tags,{})
+}
+
+resource "aws_iam_role_policy" "xsiam_kinesis_firehose_role_policy" {
+  role = aws_iam_role.xsiam_kinesis_firehose_role.id
+
+  name = "${var.tags_prefix}-xsiam_kinesis_firehose_role_policy"
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = [
+          "logs:DescribeLogGroups",
+          "logs:DescribeLogStreams",
+          "logs:GetLogEvents"
+        ]
+        Effect   = "Allow"
+        Resource = "*"
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "kinesis_firehose_error_log_role_attachment" {
+  policy_arn = aws_iam_policy.xsiam_kinesis_firehose_error_log_policy.arn
+  role       = aws_iam_role.xsiam_kinesis_firehose_role.name
+
+}
+
+resource "aws_iam_policy" "xsiam_kinesis_firehose_error_log_policy" {
+  name = "${var.tags_prefix}-xsiam_kinesis_firehose_error_log_policy"
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = [
+          "logs:PutLogEvents",
+        ]
+        Effect = "Allow"
+        Resource = [
+          "${aws_cloudwatch_log_group.xsiam_delivery_group.arn}/*"
+        ]
+      }
+    ]
+  })
+
+  tags = try(local.tags,{})
+}
+
+
+resource "aws_iam_role_policy_attachment" "kinesis_role_attachment" {
+  policy_arn = aws_iam_policy.s3_kinesis_xsiam_policy.arn
+  role       = aws_iam_role.xsiam_kinesis_firehose_role.name
+
+}
+
+resource "aws_iam_policy" "s3_kinesis_xsiam_policy" {
+
+  # Terraform's "jsonencode" function converts a
+  # Terraform expression result to valid JSON syntax.
+  name = "${var.tags_prefix}-s3_kinesis_xsiam_policy"
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = [
+          "s3:AbortMultipartUpload",
+          "s3:GetBucketLocation",
+          "s3:GetObject",
+          "s3:ListBucket",
+          "s3:ListBucketMultipartUploads",
+          "s3:PutObject"
+        ]
+        Effect = "Allow"
+        Resource = [
+          aws_s3_bucket.xsiam_firehose_bucket.arn,
+          "${aws_s3_bucket.xsiam_firehose_bucket.arn}/*"
+        ]
+      }
+    ]
+  })
+
+  tags = try(local.tags,{})
+}
+
+
+
+resource "aws_cloudwatch_log_subscription_filter" "nacs_server_xsiam_subscription" {
+  name            = "${var.tags_prefix}-nacs_server_xsiam_subscription"
+  role_arn        = aws_iam_role.this.arn
+  log_group_name  = aws_flow_log.cloudwatch.log_group_name
+  filter_pattern  = ""
+  destination_arn = aws_kinesis_firehose_delivery_stream.xsiam_delivery_stream.arn
+}
+
+resource "aws_iam_role" "this" {
+  name_prefix        = "${var.tags_prefix}"
+  tags               = try(local.tags,{})
+  assume_role_policy = <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Action": "sts:AssumeRole",
+      "Principal": {
+        "Service": "logs.amazonaws.com"
+      },
+      "Effect": "Allow",
+      "Sid": ""
+    }
+  ]
+}
+EOF
+}
+
+resource "aws_iam_policy" "put_record" {
+  name_prefix = "${var.tags_prefix}-put_record"
+  tags        = try(local.tags,{})
+  policy      = <<-EOF
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+                "firehose:PutRecord",
+                "firehose:PutRecordBatch"
+            ],
+            "Resource": [
+                "${aws_kinesis_firehose_delivery_stream.xsiam_delivery_stream.arn}"
+            ]
+        }
+    ]
+}
+EOF
+}
+
+resource "aws_iam_role_policy_attachment" "this" {
+  role       = aws_iam_role.this.name
+  policy_arn = aws_iam_policy.put_record.arn
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+####### END OF FIREHOSE SOURCE
+
+
+
+
+
+
 resource "aws_vpc_ipv4_cidr_block_association" "subnet_sets" {
   for_each = {
     for k, v in tomap(var.subnet_sets) :
