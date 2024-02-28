@@ -227,6 +227,23 @@ data "aws_secretsmanager_secret_version" "xsiam_preprod_network_secret" {
   secret_id = "xsiam_preprod_network_secret"
 }
 
+resource "aws_flow_log" "firehose" {
+  iam_role_arn             = var.vpc_flow_log_iam_role
+  log_destination          = aws_kinesis_firehose_delivery_stream.firehose_stream.arn
+  max_aggregation_interval = "60"
+  traffic_type             = "ALL"
+  log_destination_type     = "firehose"
+  vpc_id                   = aws_vpc.vpc.id
+
+  tags = merge(
+    var.tags_common,
+    {
+      Name = "${var.tags_prefix}-vpc-flow-log-firehose-${random_id.flow_logs.hex}"
+    }
+  )
+}
+
+
 resource "aws_kinesis_firehose_delivery_stream" "firehose_stream" {
   name        = "${var.tags_prefix}-xsiam-delivery-stream"
   destination = "http_endpoint"
