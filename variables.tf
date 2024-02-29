@@ -26,3 +26,18 @@ variable "vpc_flow_log_iam_role" {
   description = "VPC Flow Log IAM role ARN for VPC Flow Logs to CloudWatch"
   type        = string
 }
+
+variable "environment" {
+  description = "The name of the environment e.g. development, test etc"
+  type        = string
+}
+
+variable "endpoint_url" {
+  description = "The aws kenisis http endpoint that the log data will be sent to"
+  type        = string
+}
+
+variable "secret_version_arn" {
+  description = "The arn of the secret version that contains the endpoint key"
+  type        = string
+}
