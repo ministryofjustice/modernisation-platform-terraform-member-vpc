@@ -219,7 +219,8 @@ locals {
     application = "modernisation_platform"
   }
 
-  secret_version_arn = "arn:aws:secretsmanager:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:secret:${data.aws_secretsmanager_secret.xsiam_preprod_network_secret.name}-${data.aws_secretsmanager_secret_version.xsiam_preprod_network_secret.version_stage}"
+  secret_version_arn = "arn:aws:secretsmanager:eu-west-2:991589384446:secret:xsiam_preprod_network_secret-Lw9DuK"
+
 
 }
 
