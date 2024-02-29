@@ -38,7 +38,7 @@ resource "aws_kinesis_firehose_delivery_stream" "firehose_stream" {
   http_endpoint_configuration {
     url                = var.endpoint_url
     name               = "${var.tags_prefix}-${var.environment}-endpoint"
-    access_key         = data.aws_secretsmanager_secret_version.xsiam_network_secret.secret_string
+    access_key         = var.secret_string
     buffering_size     = 5
     buffering_interval = 300
     role_arn           = aws_iam_role.xsiam_kinesis_firehose_role.arn
@@ -126,16 +126,6 @@ resource "aws_iam_role_policy" "xsiam_kinesis_firehose_role_policy" {
           "logs:GetLogEvents"
         ]
         Resource = "*"
-      },
-      {
-        Sid    = "secretsmanager"
-        Effect = "Allow"
-        Action = [
-          "secretsmanager:GetSecretValue",
-          "secretsmanager:DescribeSecret",
-          "secretsmanager:ListSecretVersionIds"
-        ]
-        Resource = "${var.secret_version_arn}"
       }
     ]
     }

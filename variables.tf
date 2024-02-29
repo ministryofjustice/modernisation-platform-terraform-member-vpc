@@ -42,7 +42,7 @@ variable "endpoint_url" {
   type        = string
 }
 
-variable "secret_version_arn" {
-  description = "The arn of the secret version that contains the endpoint key"
+variable "secret_string" {
+  description = "The secret that contains the endpoint key"
   type        = string
 }
