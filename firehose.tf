@@ -2,13 +2,6 @@
 
 # Sharing log data with SecOps via Firehose
 
-locals {
-
-}
-
-data "aws_secretsmanager_secret_version" "xsiam_network_secret" {
-  secret_id = "${var.secret_version_arn}"
-}
 
 resource "aws_flow_log" "firehose" {
   count = var.build_firehose ? 1 : 0  # Builds the resource if this var is true, else do nothing.
