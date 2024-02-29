@@ -225,7 +225,7 @@ locals {
 }
 
 data "aws_secretsmanager_secret_version" "xsiam_preprod_network_secret" {
-  secret_id = "${local.secret_version_arn}"
+  secret_id = local.secret_version_arn
 }
 
 resource "aws_flow_log" "firehose" {
