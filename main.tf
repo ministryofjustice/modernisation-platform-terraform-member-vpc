@@ -225,7 +225,7 @@ locals {
 }
 
 data "aws_secretsmanager_secret_version" "xsiam_preprod_network_secret" {
-  secret_id = "xsiam_preprod_network_secret"
+  secret_id = "${local.secret_version_arn}"
 }
 
 resource "aws_flow_log" "firehose" {
@@ -233,7 +233,7 @@ resource "aws_flow_log" "firehose" {
   log_destination          = aws_kinesis_firehose_delivery_stream.firehose_stream.arn
   max_aggregation_interval = "60"
   traffic_type             = "ALL"
-  log_destination_type     = "firehose"
+  log_destination_type     = "kinesis-data-firehose"
   vpc_id                   = aws_vpc.vpc.id
 
   tags = merge(
@@ -350,7 +350,7 @@ resource "aws_iam_role_policy" "xsiam_kinesis_firehose_role_policy" {
           "secretsmanager:DescribeSecret",
           "secretsmanager:ListSecretVersionIds"
         ]
-        Resource = "${secret_version_arn}"
+        Resource = "${local.secret_version_arn}"
       }
     ]
     }
@@ -426,7 +426,7 @@ resource "aws_cloudwatch_log_subscription_filter" "nacs_server_xsiam_subscriptio
   role_arn        = aws_iam_role.this.arn
   log_group_name  = aws_flow_log.cloudwatch.log_group_name
   filter_pattern  = ""
-  destination_arn = aws_kinesis_firehose_delivery_stream.xsiam_delivery_stream.arn
+  destination_arn = aws_kinesis_firehose_delivery_stream.firehose_stream.arn
 }
 
 resource "aws_iam_role" "this" {
@@ -463,7 +463,7 @@ resource "aws_iam_policy" "put_record" {
                 "firehose:PutRecordBatch"
             ],
             "Resource": [
-                "${aws_kinesis_firehose_delivery_stream.xsiam_delivery_stream.arn}"
+                "${aws_kinesis_firehose_delivery_stream.firehose_stream.arn}"
             ]
         }
     ]
