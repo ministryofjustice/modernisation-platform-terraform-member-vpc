@@ -6,7 +6,7 @@
 resource "aws_flow_log" "firehose" {
   count = var.build_firehose ? 1 : 0  # Builds the resource if this var is true, else do nothing.
   iam_role_arn             = var.vpc_flow_log_iam_role
-  log_destination          = aws_kinesis_firehose_delivery_stream.firehose_stream.arn
+  log_destination          = aws_kinesis_firehose_delivery_stream.firehose_stream[count.index].arn
   max_aggregation_interval = "60"
   traffic_type             = "ALL"
   log_destination_type     = "kinesis-data-firehose"
@@ -144,7 +144,7 @@ resource "aws_iam_policy" "xsiam_kinesis_firehose_error_log_policy" {
         ]
         Effect = "Allow"
         Resource = [
-          "${aws_cloudwatch_log_group.xsiam_delivery_group.arn}/*"
+          "${aws_cloudwatch_log_group.xsiam_delivery_group[count.index].arn}/*"
         ]
       }
     ]
@@ -192,7 +192,7 @@ resource "aws_iam_policy" "s3_kinesis_xsiam_policy" {
 resource "aws_cloudwatch_log_subscription_filter" "nacs_server_xsiam_subscription" {
   count = var.build_firehose ? 1 : 0  # Builds the resource if this var is true, else do nothing.
   name            = "${var.tags_prefix}-nacs_server_xsiam_subscription"
-  role_arn        = aws_iam_role.this.arn
+  role_arn        = aws_iam_role.put_record_role[count.index].arn
   log_group_name  = aws_flow_log.cloudwatch.log_group_name
   filter_pattern  = ""
   destination_arn = aws_kinesis_firehose_delivery_stream.firehose_stream[count.index].arn
