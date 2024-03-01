@@ -34,18 +34,18 @@ resource "aws_kinesis_firehose_delivery_stream" "firehose_stream" {
     access_key         = var.secret_string
     buffering_size     = 5
     buffering_interval = 300
-    role_arn           = aws_iam_role.xsiam_kinesis_firehose_role.arn
+    role_arn           = aws_iam_role.xsiam_kinesis_firehose_role[count.index].arn
     s3_backup_mode     = "FailedDataOnly"
 
     cloudwatch_logging_options {
       enabled         = true
-      log_group_name  = aws_cloudwatch_log_group.xsiam_delivery_group.name
-      log_stream_name = aws_cloudwatch_log_stream.xsiam_delivery_stream.name
+      log_group_name  = aws_cloudwatch_log_group.xsiam_delivery_group[count.index].name
+      log_stream_name = aws_cloudwatch_log_stream.xsiam_delivery_stream[count.index].name
     }
 
     s3_configuration {
-      role_arn           = aws_iam_role.xsiam_kinesis_firehose_role.arn
-      bucket_arn         = aws_s3_bucket.xsiam_firehose_bucket.arn
+      role_arn           = aws_iam_role.xsiam_kinesis_firehose_role[count.index].arn
+      bucket_arn         = aws_s3_bucket.xsiam_firehose_bucket[count.index].arn
       buffering_size     = 10
       buffering_interval = 400
       compression_format = "GZIP"
@@ -79,7 +79,7 @@ resource "aws_cloudwatch_log_group" "xsiam_delivery_group" {
 resource "aws_cloudwatch_log_stream" "xsiam_delivery_stream" {
   count = var.build_firehose ? 1 : 0  # Builds the resource if this var is true, else do nothing.
   name           = "${var.tags_prefix}-${var.environment}-errors"
-  log_group_name = aws_cloudwatch_log_group.xsiam_delivery_group.name
+  log_group_name = aws_cloudwatch_log_group.xsiam_delivery_group[count.index].name
 }
 
 resource "aws_iam_role" "xsiam_kinesis_firehose_role" {
@@ -104,7 +104,7 @@ resource "aws_iam_role" "xsiam_kinesis_firehose_role" {
 resource "aws_iam_role_policy" "xsiam_kinesis_firehose_role_policy" {
   count = var.build_firehose ? 1 : 0  # Builds the resource if this var is true, else do nothing. 
  
-  role = aws_iam_role.xsiam_kinesis_firehose_role.id
+  role = aws_iam_role.xsiam_kinesis_firehose_role[count.index].id
 
   name = "${var.tags_prefix}-xsiam_kinesis_firehose_role_policy"
   policy = jsonencode({
@@ -127,8 +127,8 @@ resource "aws_iam_role_policy" "xsiam_kinesis_firehose_role_policy" {
 
 resource "aws_iam_role_policy_attachment" "kinesis_firehose_error_log_role_attachment" {
   count = var.build_firehose ? 1 : 0  # Builds the resource if this var is true, else do nothing.
-  policy_arn = aws_iam_policy.xsiam_kinesis_firehose_error_log_policy.arn
-  role       = aws_iam_role.xsiam_kinesis_firehose_role.name
+  policy_arn = aws_iam_policy.xsiam_kinesis_firehose_error_log_policy[count.index].arn
+  role       = aws_iam_role.xsiam_kinesis_firehose_role[count.index].name
 
 }
 
@@ -155,8 +155,8 @@ resource "aws_iam_policy" "xsiam_kinesis_firehose_error_log_policy" {
 
 resource "aws_iam_role_policy_attachment" "kinesis_role_attachment" {
   count = var.build_firehose ? 1 : 0  # Builds the resource if this var is true, else do nothing. 
-  policy_arn = aws_iam_policy.s3_kinesis_xsiam_policy.arn
-  role       = aws_iam_role.xsiam_kinesis_firehose_role.name
+  policy_arn = aws_iam_policy.s3_kinesis_xsiam_policy[count.index].arn
+  role       = aws_iam_role.xsiam_kinesis_firehose_role[count.index].name
 
 }
 
@@ -179,8 +179,8 @@ resource "aws_iam_policy" "s3_kinesis_xsiam_policy" {
         ]
         Effect = "Allow"
         Resource = [
-          aws_s3_bucket.xsiam_firehose_bucket.arn,
-          "${aws_s3_bucket.xsiam_firehose_bucket.arn}/*"
+          "${aws_s3_bucket.xsiam_firehose_bucket[count.index].arn}",
+          "${aws_s3_bucket.xsiam_firehose_bucket[count.index].arn}/*"
         ]
       }
     ]
@@ -195,7 +195,7 @@ resource "aws_cloudwatch_log_subscription_filter" "nacs_server_xsiam_subscriptio
   role_arn        = aws_iam_role.this.arn
   log_group_name  = aws_flow_log.cloudwatch.log_group_name
   filter_pattern  = ""
-  destination_arn = aws_kinesis_firehose_delivery_stream.firehose_stream.arn
+  destination_arn = aws_kinesis_firehose_delivery_stream.firehose_stream[count.index].arn
 }
 
 resource "aws_iam_role" "put_record_role" {
@@ -234,7 +234,7 @@ resource "aws_iam_policy" "put_record_policy" {
                 "firehose:PutRecordBatch"
             ],
             "Resource": [
-                "${aws_kinesis_firehose_delivery_stream.firehose_stream.arn}"
+                "${aws_kinesis_firehose_delivery_stream.firehose_stream[count.index].arn}"
             ]
         }
     ]
@@ -244,6 +244,6 @@ EOF
 
 resource "aws_iam_role_policy_attachment" "put_record_policy_attachment" {
   count = var.build_firehose ? 1 : 0  # Builds the resource if this var is true, else do nothing.
-  role       = aws_iam_role.put_record_role.arn
-  policy_arn = aws_iam_policy.put_record_policy.arn
+  role       = aws_iam_role.put_record_role[count.index].arn
+  policy_arn = aws_iam_policy.put_record_policy[count.index].arn
 }
