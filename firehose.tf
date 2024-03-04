@@ -28,9 +28,9 @@ resource "aws_kinesis_firehose_delivery_stream" "firehose_stream" {
   tags = try(var.tags_common, {})
 
   http_endpoint_configuration {
-    url                = var.endpoint_url
+    url                = var.kinesis_endpoint_url
     name               = "${var.tags_prefix}-endpoint"
-    access_key         = var.secret_string
+    access_key         = var.kinesis_endpoint_secret_string
     buffering_size     = 5
     buffering_interval = 300
     role_arn           = aws_iam_role.xsiam_kinesis_firehose_role[count.index].arn

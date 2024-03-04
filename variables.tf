@@ -32,17 +32,12 @@ variable "build_firehose" {
   type        = bool
 }
 
-variable "environment" {
-  description = "The name of the environment e.g. development, test etc"
+variable "kinesis_endpoint_url" {
+  description = "The aws kinesis http endpoint that the log data will be sent to"
   type        = string
 }
 
-variable "endpoint_url" {
-  description = "The aws kenisis http endpoint that the log data will be sent to"
-  type        = string
-}
-
-variable "secret_string" {
+variable "kinesis_endpoint_secret_string" {
   description = "The secret that contains the endpoint key"
   type        = string
 }
