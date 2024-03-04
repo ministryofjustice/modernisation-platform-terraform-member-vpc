@@ -1,9 +1,15 @@
 
-# Sharing log data with SecOps via Firehose.check "name"
+# Sharing log data with SecOps via Firehose.check "name".check "name"
+
+# To build the firehose resources we want the following to be true:
+# - var.build_firehose is true
+# - var.kinesis_endpoint_url has a value.
+# This ensures that we don't try and build the resources without an endpoint provided.
+
 # Note that var.tags_prefix includes the environment name so we don't need to include that in the name as a separate variable.
 
 resource "aws_flow_log" "firehose" {
-  count                    = var.build_firehose ? 1 : 0 # Builds the resource if this var is true, else do nothing.
+  count                    = var.build_firehose && length(var.kinesis_endpoint_url) > 0 ? 1 : 0 # Builds the resource if this var is true, else do nothing.
   iam_role_arn             = var.vpc_flow_log_iam_role
   log_destination          = aws_kinesis_firehose_delivery_stream.firehose_stream[count.index].arn
   max_aggregation_interval = "60"
@@ -20,7 +26,7 @@ resource "aws_flow_log" "firehose" {
 }
 
 resource "aws_kinesis_firehose_delivery_stream" "firehose_stream" {
-  count = var.build_firehose ? 1 : 0 # Builds the resource if this var is true, else do nothing.
+  count = var.build_firehose && length(var.kinesis_endpoint_url) > 0 ? 1 : 0 
 
   name        = "${var.tags_prefix}-xsiam-delivery-stream"
   destination = "http_endpoint"
@@ -63,26 +69,26 @@ resource "aws_kinesis_firehose_delivery_stream" "firehose_stream" {
 }
 
 resource "aws_s3_bucket" "xsiam_firehose_bucket" {
-  count  = var.build_firehose ? 1 : 0 # Builds the resource if this var is true, else do nothing.
+  count = var.build_firehose && length(var.kinesis_endpoint_url) > 0 ? 1 : 0 
   bucket = "${var.tags_prefix}-xsiam-firehose-bucket"
   tags   = try(var.tags_common, {})
 }
 
 resource "aws_cloudwatch_log_group" "xsiam_delivery_group" {
-  count             = var.build_firehose ? 1 : 0 # Builds the resource if this var is true, else do nothing.
+  count             = var.build_firehose && length(var.kinesis_endpoint_url) > 0 ? 1 : 0 
   name              = "${var.tags_prefix}-xsiam-delivery-group"
   tags              = try(var.tags_common, {})
   retention_in_days = 90
 }
 
 resource "aws_cloudwatch_log_stream" "xsiam_delivery_stream" {
-  count          = var.build_firehose ? 1 : 0 # Builds the resource if this var is true, else do nothing.
+  count          = var.build_firehose && length(var.kinesis_endpoint_url) > 0 ? 1 : 0 
   name           = "${var.tags_prefix}-errors"
   log_group_name = aws_cloudwatch_log_group.xsiam_delivery_group[count.index].name
 }
 
 resource "aws_iam_role" "xsiam_kinesis_firehose_role" {
-  count = var.build_firehose ? 1 : 0 # Builds the resource if this var is true, else do nothing.
+  count = var.build_firehose && length(var.kinesis_endpoint_url) > 0 ? 1 : 0 
   name  = "${var.tags_prefix}-xsiam-delivery-stream-role"
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -101,7 +107,7 @@ resource "aws_iam_role" "xsiam_kinesis_firehose_role" {
 }
 
 resource "aws_iam_role_policy" "xsiam_kinesis_firehose_role_policy" {
-  count = var.build_firehose ? 1 : 0 # Builds the resource if this var is true, else do nothing. 
+  count = var.build_firehose && length(var.kinesis_endpoint_url) > 0 ? 1 : 0
 
   role = aws_iam_role.xsiam_kinesis_firehose_role[count.index].id
 
@@ -125,14 +131,14 @@ resource "aws_iam_role_policy" "xsiam_kinesis_firehose_role_policy" {
 }
 
 resource "aws_iam_role_policy_attachment" "kinesis_firehose_error_log_role_attachment" {
-  count      = var.build_firehose ? 1 : 0 # Builds the resource if this var is true, else do nothing.
+  count      = var.build_firehose && length(var.kinesis_endpoint_url) > 0 ? 1 : 0 
   policy_arn = aws_iam_policy.xsiam_kinesis_firehose_error_log_policy[count.index].arn
   role       = aws_iam_role.xsiam_kinesis_firehose_role[count.index].name
 
 }
 
 resource "aws_iam_policy" "xsiam_kinesis_firehose_error_log_policy" {
-  count = var.build_firehose ? 1 : 0 # Builds the resource if this var is true, else do nothing.
+  count = var.build_firehose && length(var.kinesis_endpoint_url) > 0 ? 1 : 0 
   name  = "${var.tags_prefix}-xsiam_kinesis_firehose_error_log_policy"
   policy = jsonencode({
     Version = "2012-10-17"
@@ -153,7 +159,7 @@ resource "aws_iam_policy" "xsiam_kinesis_firehose_error_log_policy" {
 }
 
 resource "aws_iam_role_policy_attachment" "kinesis_role_attachment" {
-  count      = var.build_firehose ? 1 : 0 # Builds the resource if this var is true, else do nothing. 
+  count      = var.build_firehose && length(var.kinesis_endpoint_url) > 0 ? 1 : 0 
   policy_arn = aws_iam_policy.s3_kinesis_xsiam_policy[count.index].arn
   role       = aws_iam_role.xsiam_kinesis_firehose_role[count.index].name
 
@@ -162,7 +168,7 @@ resource "aws_iam_role_policy_attachment" "kinesis_role_attachment" {
 resource "aws_iam_policy" "s3_kinesis_xsiam_policy" {
   # Terraform's "jsonencode" function converts a
   # Terraform expression result to valid JSON syntax. 
-  count = var.build_firehose ? 1 : 0 # Builds the resource if this var is true, else do nothing.
+  count = var.build_firehose && length(var.kinesis_endpoint_url) > 0 ? 1 : 0 
   name  = "${var.tags_prefix}-s3_kinesis_xsiam_policy"
   policy = jsonencode({
     Version = "2012-10-17"
@@ -189,7 +195,7 @@ resource "aws_iam_policy" "s3_kinesis_xsiam_policy" {
 }
 
 resource "aws_cloudwatch_log_subscription_filter" "nacs_server_xsiam_subscription" {
-  count           = var.build_firehose ? 1 : 0 # Builds the resource if this var is true, else do nothing.
+  count           = var.build_firehose && length(var.kinesis_endpoint_url) > 0 ? 1 : 0 
   name            = "${var.tags_prefix}-nacs_server_xsiam_subscription"
   role_arn        = aws_iam_role.put_record_role[count.index].arn
   log_group_name  = aws_flow_log.cloudwatch.log_group_name
@@ -198,7 +204,7 @@ resource "aws_cloudwatch_log_subscription_filter" "nacs_server_xsiam_subscriptio
 }
 
 resource "aws_iam_role" "put_record_role" {
-  count              = var.build_firehose ? 1 : 0 # Builds the resource if this var is true, else do nothing.
+  count              = var.build_firehose && length(var.kinesis_endpoint_url) > 0 ? 1 : 0 
   name_prefix        = "${var.tags_prefix}-put_record_role"
   tags               = try(var.tags_common, {})
   assume_role_policy = <<EOF
@@ -219,7 +225,7 @@ EOF
 }
 
 resource "aws_iam_policy" "put_record_policy" {
-  count       = var.build_firehose ? 1 : 0 # Builds the resource if this var is true, else do nothing. 
+  count       = var.build_firehose && length(var.kinesis_endpoint_url) > 0 ? 1 : 0 
   name_prefix = "${var.tags_prefix}-put_record_policy"
   tags        = try(var.tags_common, {})
   policy      = <<-EOF
@@ -242,7 +248,7 @@ EOF
 }
 
 resource "aws_iam_role_policy_attachment" "put_record_policy_attachment" {
-  count      = var.build_firehose ? 1 : 0 # Builds the resource if this var is true, else do nothing.
+  count      = var.build_firehose && length(var.kinesis_endpoint_url) > 0 ? 1 : 0 
   role       = aws_iam_role.put_record_role[count.index].arn
   policy_arn = aws_iam_policy.put_record_policy[count.index].arn
 }
