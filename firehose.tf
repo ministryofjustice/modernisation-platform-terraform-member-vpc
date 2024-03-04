@@ -1,7 +1,6 @@
 
-
-# Sharing log data with SecOps via Firehose
-
+# Sharing log data with SecOps via Firehose.check "name"
+# Note that var.tags_prefix includes the environment name so we don't need to include that in the name as a separate variable.
 
 resource "aws_flow_log" "firehose" {
   count = var.build_firehose ? 1 : 0  # Builds the resource if this var is true, else do nothing.
@@ -15,7 +14,7 @@ resource "aws_flow_log" "firehose" {
   tags = merge(
     var.tags_common,
     {
-      Name = "${var.tags_prefix}-${var.environment}-vpc-flow-log-firehose-${random_id.flow_logs.hex}"
+      Name = "${var.tags_prefix}-vpc-flow-log-firehose-${random_id.flow_logs.hex}"
     }
   )
 }
@@ -23,14 +22,14 @@ resource "aws_flow_log" "firehose" {
 resource "aws_kinesis_firehose_delivery_stream" "firehose_stream" {
   count = var.build_firehose ? 1 : 0  # Builds the resource if this var is true, else do nothing.
 
-  name        = "${var.tags_prefix}-${var.environment}-xsiam-delivery-stream"
+  name        = "${var.tags_prefix}-xsiam-delivery-stream"
   destination = "http_endpoint"
 
   tags = try(var.tags_common, {})
 
   http_endpoint_configuration {
     url                = var.endpoint_url
-    name               = "${var.tags_prefix}-${var.environment}-endpoint"
+    name               = "${var.tags_prefix}-endpoint"
     access_key         = var.secret_string
     buffering_size     = 5
     buffering_interval = 300
@@ -65,20 +64,20 @@ resource "aws_kinesis_firehose_delivery_stream" "firehose_stream" {
 
 resource "aws_s3_bucket" "xsiam_firehose_bucket" {
   count = var.build_firehose ? 1 : 0  # Builds the resource if this var is true, else do nothing.
-  bucket = "${var.tags_prefix}-${var.environment}-xsiam-firehose-bucket"
+  bucket = "${var.tags_prefix}-xsiam-firehose-bucket"
    tags  = try(var.tags_common,{})
 }
 
 resource "aws_cloudwatch_log_group" "xsiam_delivery_group" {
   count = var.build_firehose ? 1 : 0  # Builds the resource if this var is true, else do nothing.
-  name              = "${var.tags_prefix}-${var.environment}-xsiam-delivery-group"
+  name              = "${var.tags_prefix}-xsiam-delivery-group"
   tags              = try(var.tags_common,{})
   retention_in_days = 90
 }
 
 resource "aws_cloudwatch_log_stream" "xsiam_delivery_stream" {
   count = var.build_firehose ? 1 : 0  # Builds the resource if this var is true, else do nothing.
-  name           = "${var.tags_prefix}-${var.environment}-errors"
+  name           = "${var.tags_prefix}-errors"
   log_group_name = aws_cloudwatch_log_group.xsiam_delivery_group[count.index].name
 }
 
