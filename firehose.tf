@@ -150,7 +150,7 @@ resource "aws_iam_role_policy_attachment" "kinesis_firehose_error_log_role_attac
 }
 
 resource "aws_iam_policy" "xsiam_kinesis_firehose_error_log_policy" {
-  count = var.build_firehose && length(var.kinesis_endpoint_url) > 0 ? 1 : 0 
+  count = var.build_firehose && length(var.kinesis_endpoint_url) > 0 ? 1 : 0
   name  = "${var.tags_prefix}-xsiam-kinesis-firehose-error-log-policy"
   policy = jsonencode({
     Version = "2012-10-17"
@@ -180,7 +180,7 @@ resource "aws_iam_role_policy_attachment" "kinesis_role_attachment" {
 resource "aws_iam_policy" "s3_kinesis_xsiam_policy" {
   # Terraform's "jsonencode" function converts a
   # Terraform expression result to valid JSON syntax. 
-  count = var.build_firehose && length(var.kinesis_endpoint_url) > 0 ? 1 : 0 
+  count = var.build_firehose && length(var.kinesis_endpoint_url) > 0 ? 1 : 0
   name  = "${var.tags_prefix}-s3-kinesis-xsiam-policy"
   policy = jsonencode({
     Version = "2012-10-17"
@@ -219,7 +219,7 @@ resource "aws_cloudwatch_log_subscription_filter" "nacs_server_xsiam_subscriptio
 }
 
 resource "aws_iam_role" "put_record_role" {
-  count              = var.build_firehose && length(var.kinesis_endpoint_url) > 0 ? 1 : 0 
+  count              = var.build_firehose && length(var.kinesis_endpoint_url) > 0 ? 1 : 0
   name_prefix        = "${var.tags_prefix}-put-record-role"
   tags               = try(var.tags_common, {})
   assume_role_policy = <<EOF
@@ -240,7 +240,7 @@ EOF
 }
 
 resource "aws_iam_policy" "put_record_policy" {
-  count       = var.build_firehose && length(var.kinesis_endpoint_url) > 0 ? 1 : 0 
+  count       = var.build_firehose && length(var.kinesis_endpoint_url) > 0 ? 1 : 0
   name_prefix = "${var.tags_prefix}-put-record-policy"
   tags        = try(var.tags_common, {})
   policy      = <<-EOF
