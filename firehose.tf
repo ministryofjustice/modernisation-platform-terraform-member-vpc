@@ -264,7 +264,7 @@ EOF
 
 resource "aws_iam_role_policy_attachment" "put_record_policy_attachment" {
   count      = var.build_firehose && length(var.kinesis_endpoint_url) > 0 ? 1 : 0
-  role       = aws_iam_role.put_record_role[count.index].arn
+  role       = aws_iam_role.put_record_role[count.index].name
   policy_arn = aws_iam_policy.put_record_policy[count.index].arn
 }
 
