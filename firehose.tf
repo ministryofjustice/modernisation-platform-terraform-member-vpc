@@ -8,22 +8,34 @@
 
 # Note that var.tags_prefix includes the environment name so we don't need to include that in the name as a separate variable.
 
-resource "aws_flow_log" "firehose" {
-  count                    = var.build_firehose && length(var.kinesis_endpoint_url) > 0 ? 1 : 0 # Builds the resource if this var is true, else do nothing.
-  iam_role_arn             = var.vpc_flow_log_iam_role
-  log_destination          = aws_kinesis_firehose_delivery_stream.firehose_stream[count.index].arn
-  max_aggregation_interval = "60"
-  traffic_type             = "ALL"
-  log_destination_type     = "kinesis-data-firehose"
-  vpc_id                   = aws_vpc.vpc.id
 
-  tags = merge(
-    var.tags_common,
-    {
-      Name = "${var.tags_prefix}-vpc-flow-log-firehose-${random_id.flow_logs.hex}"
-    }
-  )
-}
+
+# resource "aws_cloudwatch_log_destination" "kinesis_endpoint_destination" {
+#   name       = "${var.tags_prefix}-kinesis_endpoint_destination-destination"
+#   role_arn   = aws_iam_role.iam_for_cloudwatch.arn # needs to be a secret
+#   target_arn = aws_kinesis_stream.kinesis_for_cloudwatch.arn # arn of the endpoint?
+# }
+
+# We don't need a new flow log as we have a subscription to the existing log. This is only needed if we are transfering data to a firehose stream in another account.
+
+# resource "aws_flow_log" "firehose" {
+#   count                    = var.build_firehose && length(var.kinesis_endpoint_url) > 0 ? 1 : 0 # Builds the resource if this var is true, else do nothing.
+#   iam_role_arn             = var.vpc_flow_log_iam_role
+#   log_destination          = aws_kinesis_firehose_delivery_stream.firehose_stream[count.index].arn
+#   max_aggregation_interval = "60"
+#   traffic_type             = "ALL"
+#   log_destination_type     = "kinesis-data-firehose"
+#   vpc_id                   = aws_vpc.vpc.id
+
+#   tags = merge(
+#     var.tags_common,
+#     {
+#       Name = "${var.tags_prefix}-vpc-flow-log-firehose-${random_id.flow_logs.hex}"
+#     }
+#   )
+# }
+
+
 
 resource "aws_kinesis_firehose_delivery_stream" "firehose_stream" {
   count = var.build_firehose && length(var.kinesis_endpoint_url) > 0 ? 1 : 0
@@ -111,12 +123,12 @@ resource "aws_iam_role_policy" "xsiam_kinesis_firehose_role_policy" {
 
   role = aws_iam_role.xsiam_kinesis_firehose_role[count.index].id
 
-  name = "${var.tags_prefix}-xsiam_kinesis_firehose_role_policy"
+  name = "${var.tags_prefix}-xsiam-kinesis-firehose-role-policy"
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
       {
-        Sid    = "log-access"
+        Sid    = "logaccess"
         Effect = "Allow"
         Action = [
           "logs:DescribeLogGroups",
@@ -138,8 +150,8 @@ resource "aws_iam_role_policy_attachment" "kinesis_firehose_error_log_role_attac
 }
 
 resource "aws_iam_policy" "xsiam_kinesis_firehose_error_log_policy" {
-  count = var.build_firehose && length(var.kinesis_endpoint_url) > 0 ? 1 : 0
-  name  = "${var.tags_prefix}-xsiam_kinesis_firehose_error_log_policy"
+  count = var.build_firehose && length(var.kinesis_endpoint_url) > 0 ? 1 : 0 
+  name  = "${var.tags_prefix}-xsiam-kinesis-firehose-error-log-policy"
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
@@ -168,8 +180,8 @@ resource "aws_iam_role_policy_attachment" "kinesis_role_attachment" {
 resource "aws_iam_policy" "s3_kinesis_xsiam_policy" {
   # Terraform's "jsonencode" function converts a
   # Terraform expression result to valid JSON syntax. 
-  count = var.build_firehose && length(var.kinesis_endpoint_url) > 0 ? 1 : 0
-  name  = "${var.tags_prefix}-s3_kinesis_xsiam_policy"
+  count = var.build_firehose && length(var.kinesis_endpoint_url) > 0 ? 1 : 0 
+  name  = "${var.tags_prefix}-s3-kinesis-xsiam-policy"
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
@@ -194,6 +206,9 @@ resource "aws_iam_policy" "s3_kinesis_xsiam_policy" {
   tags = try(var.tags_common, {})
 }
 
+# Cloudwatch Log Subscription Filter & IAM Resources. 
+# This acts as the interface between the flow log data in cloudwatch & the Firehose Stream.
+
 resource "aws_cloudwatch_log_subscription_filter" "nacs_server_xsiam_subscription" {
   count           = var.build_firehose && length(var.kinesis_endpoint_url) > 0 ? 1 : 0
   name            = "${var.tags_prefix}-nacs_server_xsiam_subscription"
@@ -204,8 +219,8 @@ resource "aws_cloudwatch_log_subscription_filter" "nacs_server_xsiam_subscriptio
 }
 
 resource "aws_iam_role" "put_record_role" {
-  count              = var.build_firehose && length(var.kinesis_endpoint_url) > 0 ? 1 : 0
-  name_prefix        = "${var.tags_prefix}-put_record_role"
+  count              = var.build_firehose && length(var.kinesis_endpoint_url) > 0 ? 1 : 0 
+  name_prefix        = "${var.tags_prefix}-put-record-role"
   tags               = try(var.tags_common, {})
   assume_role_policy = <<EOF
 {
@@ -225,8 +240,8 @@ EOF
 }
 
 resource "aws_iam_policy" "put_record_policy" {
-  count       = var.build_firehose && length(var.kinesis_endpoint_url) > 0 ? 1 : 0
-  name_prefix = "${var.tags_prefix}-put_record_policy"
+  count       = var.build_firehose && length(var.kinesis_endpoint_url) > 0 ? 1 : 0 
+  name_prefix = "${var.tags_prefix}-put-record-policy"
   tags        = try(var.tags_common, {})
   policy      = <<-EOF
 {
@@ -252,3 +267,4 @@ resource "aws_iam_role_policy_attachment" "put_record_policy_attachment" {
   role       = aws_iam_role.put_record_role[count.index].arn
   policy_arn = aws_iam_policy.put_record_policy[count.index].arn
 }
+
