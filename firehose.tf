@@ -242,7 +242,8 @@ resource "aws_s3_bucket" "xsiam_firehose_bucket" {
 }
 
 resource "aws_s3_bucket_server_side_encryption_configuration" "xsiam_firehose_bucket_encryption" {
-  bucket = aws_s3_bucket.xsiam_firehose_bucket.id
+  count  = var.build_firehose && length(var.kinesis_endpoint_url) > 0 ? 1 : 0
+  bucket = aws_s3_bucket.xsiam_firehose_bucket[count.index].id
   rule {
     apply_server_side_encryption_by_default {
       sse_algorithm = "aws:kms"
@@ -251,7 +252,8 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "xsiam_firehose_bu
 }
 
 resource "aws_s3_bucket_lifecycle_configuration" "xsiam_firehose_bucket_config" {
-  bucket = aws_s3_bucket.xsiam_firehose_bucket.id
+  count  = var.build_firehose && length(var.kinesis_endpoint_url) > 0 ? 1 : 0
+  bucket = aws_s3_bucket.xsiam_firehose_bucket[count.index].id
   rule {
     id = "delete-old"
     expiration {
@@ -266,7 +268,8 @@ resource "aws_s3_bucket_lifecycle_configuration" "xsiam_firehose_bucket_config" 
 }
 
 resource "aws_s3_bucket_versioning" "xsiam_firehose_bucket_versioning" {
-  bucket = aws_s3_bucket.xsiam_firehose_bucket.id
+  count  = var.build_firehose && length(var.kinesis_endpoint_url) > 0 ? 1 : 0
+  bucket = aws_s3_bucket.xsiam_firehose_bucket[count.index].id
   versioning_configuration {
     status = "Enabled"
   }
