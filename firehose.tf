@@ -90,7 +90,7 @@ resource "aws_iam_role" "xsiam_kinesis_firehose_role" {
   tags = try(var.tags_common, {})
 }
 
-#tfsec:ignore:aws-iam-no-policy-wildcards
+#tfsec:ignore:aws-iam-no-policy-wildcards - We are keeping this 
 resource "aws_iam_role_policy" "xsiam_kinesis_firehose_role_policy" {
   #checkov:skip=CKV_AWS_355: - Ignore for now whilst we look into this.
   count = var.build_firehose && length(var.kinesis_endpoint_url) > 0 ? 1 : 0
@@ -242,22 +242,25 @@ resource "aws_iam_role_policy_attachment" "put_record_policy_attachment" {
 }
 
 
-# S3 Bucket to hold the transfer failure logs
+# S3 Bucket to hold the transfer failure logs. We are using the default s3 key and no logging as it is not needed.
 
-#tfsec:ignore:aws-ssm-secret-use-customer-key - we are using the default key.
+#tfsec:ignore:aws-ssm-secret-use-customer-key
 #tfsec:ignore:aws-s3-encryption-customer-key
-#tfsec:ignore:aws-s3-enable-bucket-logging - logging is not required.
+#tfsec:ignore:aws-s3-enable-bucket-logging 
 resource "aws_s3_bucket" "xsiam_firehose_bucket" {
   #checkov:skip=CKV_AWS_241: We have encryption already in place using the default s3 kms key.
-  #checkov:skip=CKV2_AWS_62:
-  #checkov:skip=CKV_AWS_144:
+  #checkov:skip=CKV_AWS_145: We use the default encryption key.
+  #checkov:skip=CKV2_AWS_62: We do not need event notifications enabled.
+  #checkov:skip=CKV_AWS_144: We are not using cross-region replication.
   #checkov:skip=CKV_AWS_18: No access logging required
+  #checkov:skip=CKV2_AWS_61: Lifecycle is enabled but this error still gets thrown.
+  #checkov:skip=CKV2_AWS_6: Public Access Block enabled - see below - but the error still gets thrown.
   count  = var.build_firehose && length(var.kinesis_endpoint_url) > 0 ? 1 : 0
   bucket = "${var.tags_prefix}-xsiam-firehose-bucket"
   tags   = try(var.tags_common, {})
 }
 
-#tfsec:ignore:aws-ssm-secret-use-customer-key - we are using the default key.
+#tfsec:ignore:aws-ssm-secret-use-customer-key
 #tfsec:ignore:aws-s3-encryption-customer-key
 resource "aws_s3_bucket_server_side_encryption_configuration" "xsiam_firehose_bucket_encryption" {
   count  = var.build_firehose && length(var.kinesis_endpoint_url) > 0 ? 1 : 0
@@ -276,7 +279,7 @@ resource "aws_s3_bucket_lifecycle_configuration" "xsiam_firehose_bucket_config" 
   rule {
     id = "delete-old"
     expiration {
-      days = 180
+      days = 366
     }
     status = "Enabled"
     transition {
@@ -286,6 +289,7 @@ resource "aws_s3_bucket_lifecycle_configuration" "xsiam_firehose_bucket_config" 
   }
 }
 
+# Ideally we would not be using versioning of s3 files but it's added for the tfsec & checkov checks.
 resource "aws_s3_bucket_versioning" "xsiam_firehose_bucket_versioning" {
   count  = var.build_firehose && length(var.kinesis_endpoint_url) > 0 ? 1 : 0
   bucket = aws_s3_bucket.xsiam_firehose_bucket[count.index].id
@@ -294,6 +298,7 @@ resource "aws_s3_bucket_versioning" "xsiam_firehose_bucket_versioning" {
   }
 }
 
+# By default s3 already blocks public access but this added for the tfsec & checkov checks.
 resource "aws_s3_bucket_public_access_block" "xsiam_firehose_bucket_block_public" {
   bucket = aws_s3_bucket.xsiam_firehose_bucket.id
   block_public_acls       = true
