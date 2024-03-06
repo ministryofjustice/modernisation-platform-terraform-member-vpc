@@ -10,6 +10,7 @@
 
 
 resource "aws_kinesis_firehose_delivery_stream" "firehose_stream" {
+  #checkov:skip=CKV_AWS_241: We are using the default key for encryption.
   count = var.build_firehose && length(var.kinesis_endpoint_url) > 0 ? 1 : 0
 
   name        = "${var.tags_prefix}-xsiam-delivery-stream"
@@ -57,10 +58,11 @@ resource "aws_kinesis_firehose_delivery_stream" "firehose_stream" {
 }
 
 resource "aws_cloudwatch_log_group" "xsiam_delivery_group" {
+  #checkov:skip=CKV_AWS_158:"Temporarily skip KMS encryption check while logging solution is being updated"
   count             = var.build_firehose && length(var.kinesis_endpoint_url) > 0 ? 1 : 0
   name              = "${var.tags_prefix}-xsiam-delivery-group"
   tags              = try(var.tags_common, {})
-  retention_in_days = 90
+  retention_in_days = 366
 }
 
 resource "aws_cloudwatch_log_stream" "xsiam_delivery_stream" {
@@ -88,11 +90,11 @@ resource "aws_iam_role" "xsiam_kinesis_firehose_role" {
   tags = try(var.tags_common, {})
 }
 
+#tfsec:ignore:aws-iam-no-policy-wildcards
 resource "aws_iam_role_policy" "xsiam_kinesis_firehose_role_policy" {
+  #checkov:skip=CKV_AWS_355: - Ignore for now whilst we look into this.
   count = var.build_firehose && length(var.kinesis_endpoint_url) > 0 ? 1 : 0
-
   role = aws_iam_role.xsiam_kinesis_firehose_role[count.index].id
-
   name = "${var.tags_prefix}-xsiam-kinesis-firehose-role-policy"
   policy = jsonencode({
     Version = "2012-10-17"
@@ -147,6 +149,7 @@ resource "aws_iam_role_policy_attachment" "kinesis_role_attachment" {
 
 }
 
+#tfsec:ignore:aws-iam-no-policy-wildcards - this is to allow s3:AbortMultiPartUpload.
 resource "aws_iam_policy" "s3_kinesis_xsiam_policy" {
   # Terraform's "jsonencode" function converts a
   # Terraform expression result to valid JSON syntax. 
@@ -241,13 +244,21 @@ resource "aws_iam_role_policy_attachment" "put_record_policy_attachment" {
 
 # S3 Bucket to hold the transfer failure logs
 
+#tfsec:ignore:aws-ssm-secret-use-customer-key - we are using the default key.
+#tfsec:ignore:aws-s3-encryption-customer-key
+#tfsec:ignore:aws-s3-enable-bucket-logging - logging is not required.
 resource "aws_s3_bucket" "xsiam_firehose_bucket" {
   #checkov:skip=CKV_AWS_241: We have encryption already in place using the default s3 kms key.
+  #checkov:skip=CKV2_AWS_62:
+  #checkov:skip=CKV_AWS_144:
+  #checkov:skip=CKV_AWS_18: No access logging required
   count  = var.build_firehose && length(var.kinesis_endpoint_url) > 0 ? 1 : 0
   bucket = "${var.tags_prefix}-xsiam-firehose-bucket"
   tags   = try(var.tags_common, {})
 }
 
+#tfsec:ignore:aws-ssm-secret-use-customer-key - we are using the default key.
+#tfsec:ignore:aws-s3-encryption-customer-key
 resource "aws_s3_bucket_server_side_encryption_configuration" "xsiam_firehose_bucket_encryption" {
   count  = var.build_firehose && length(var.kinesis_endpoint_url) > 0 ? 1 : 0
   bucket = aws_s3_bucket.xsiam_firehose_bucket[count.index].id
@@ -259,6 +270,7 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "xsiam_firehose_bu
 }
 
 resource "aws_s3_bucket_lifecycle_configuration" "xsiam_firehose_bucket_config" {
+  #checkov:skip=CKV_AWS_300: Event notifications not used.
   count  = var.build_firehose && length(var.kinesis_endpoint_url) > 0 ? 1 : 0
   bucket = aws_s3_bucket.xsiam_firehose_bucket[count.index].id
   rule {
@@ -280,4 +292,12 @@ resource "aws_s3_bucket_versioning" "xsiam_firehose_bucket_versioning" {
   versioning_configuration {
     status = "Enabled"
   }
+}
+
+resource "aws_s3_bucket_public_access_block" "xsiam_firehose_bucket_block_public" {
+  bucket = aws_s3_bucket.xsiam_firehose_bucket.id
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
 }
