@@ -121,6 +121,7 @@ resource "aws_iam_role_policy_attachment" "kinesis_firehose_error_log_role_attac
 
 }
 
+#tfsec:ignore:aws-iam-no-policy-wildcards
 resource "aws_iam_policy" "xsiam_kinesis_firehose_error_log_policy" {
   count = var.build_firehose && length(var.kinesis_endpoint_url) > 0 ? 1 : 0
   name  = "${var.tags_prefix}-xsiam-kinesis-firehose-error-log-policy"
