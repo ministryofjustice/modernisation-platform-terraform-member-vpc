@@ -52,12 +52,6 @@ resource "aws_kinesis_firehose_delivery_stream" "firehose_stream" {
   }
 }
 
-resource "aws_s3_bucket" "xsiam_firehose_bucket" {
-  count  = var.build_firehose && length(var.kinesis_endpoint_url) > 0 ? 1 : 0
-  bucket = "${var.tags_prefix}-xsiam-firehose-bucket"
-  tags   = try(var.tags_common, {})
-}
-
 resource "aws_cloudwatch_log_group" "xsiam_delivery_group" {
   count             = var.build_firehose && length(var.kinesis_endpoint_url) > 0 ? 1 : 0
   name              = "${var.tags_prefix}-xsiam-delivery-group"
@@ -240,3 +234,40 @@ resource "aws_iam_role_policy_attachment" "put_record_policy_attachment" {
   policy_arn = aws_iam_policy.put_record_policy[count.index].arn
 }
 
+
+resource "aws_s3_bucket" "xsiam_firehose_bucket" {
+  count  = var.build_firehose && length(var.kinesis_endpoint_url) > 0 ? 1 : 0
+  bucket = "${var.tags_prefix}-xsiam-firehose-bucket"
+  tags   = try(var.tags_common, {})
+}
+
+resource "aws_s3_bucket_server_side_encryption_configuration" "xsiam_firehose_bucket_encryption" {
+  bucket = aws_s3_bucket.xsiam_firehose_bucket.id
+  rule {
+    apply_server_side_encryption_by_default {
+      sse_algorithm = "aws:kms"
+    }
+  }
+}
+
+resource "aws_s3_bucket_lifecycle_configuration" "xsiam_firehose_bucket_config" {
+  bucket = aws_s3_bucket.xsiam_firehose_bucket.id
+  rule {
+    id = "delete-old"
+    expiration {
+      days = 180
+    }
+    status = "Enabled"
+    transition {
+      days          = 60
+      storage_class = "GLACIER"
+    }
+  }
+}
+
+resource "aws_s3_bucket_versioning" "xsiam_firehose_bucket_versioning" {
+  bucket = aws_s3_bucket.xsiam_firehose_bucket.id
+  versioning_configuration {
+    status = "Enabled"
+  }
+}
