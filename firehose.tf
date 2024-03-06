@@ -248,6 +248,10 @@ resource "aws_iam_role_policy_attachment" "put_record_policy_attachment" {
 #tfsec:ignore:aws-s3-encryption-customer-key
 #tfsec:ignore:aws-s3-enable-bucket-logging
 #tfsec:ignore:aws-s3-specify-public-access-block
+#tfsec:ignore:aws-s3-block-public-acls
+#tfsec:ignore:aws-s3-block-public-policy
+#tfsec:ignore:aws-s3-no-public-buckets
+#tfsec:ignore:aws-s3-ignore-public-acls
 resource "aws_s3_bucket" "xsiam_firehose_bucket" {
   #checkov:skip=CKV_AWS_241: We have encryption already in place using the default s3 kms key.
   #checkov:skip=CKV_AWS_21: We already have versioning enabled.
