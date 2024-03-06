@@ -90,7 +90,7 @@ resource "aws_iam_role" "xsiam_kinesis_firehose_role" {
   tags = try(var.tags_common, {})
 }
 
-#tfsec:ignore:aws-iam-no-policy-wildcards - We are keeping this 
+#tfsec:ignore:aws-iam-no-policy-wildcards
 resource "aws_iam_role_policy" "xsiam_kinesis_firehose_role_policy" {
   #checkov:skip=CKV_AWS_355: - Ignore for now whilst we look into this.
   count = var.build_firehose && length(var.kinesis_endpoint_url) > 0 ? 1 : 0
