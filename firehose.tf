@@ -17,6 +17,10 @@ resource "aws_kinesis_firehose_delivery_stream" "firehose_stream" {
 
   tags = try(var.tags_common, {})
 
+  server_side_encryption {
+    enabled = true    
+  }
+
   http_endpoint_configuration {
     url                = var.kinesis_endpoint_url
     name               = "${var.tags_prefix}-endpoint"
@@ -235,7 +239,10 @@ resource "aws_iam_role_policy_attachment" "put_record_policy_attachment" {
 }
 
 
+# S3 Bucket to hold the transfer failure logs
+
 resource "aws_s3_bucket" "xsiam_firehose_bucket" {
+  #checkov:skip=CKV_AWS_241: We have encryption already in place using the default s3 kms key.
   count  = var.build_firehose && length(var.kinesis_endpoint_url) > 0 ? 1 : 0
   bucket = "${var.tags_prefix}-xsiam-firehose-bucket"
   tags   = try(var.tags_common, {})
