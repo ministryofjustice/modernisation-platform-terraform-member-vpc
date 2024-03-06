@@ -62,7 +62,7 @@ resource "aws_cloudwatch_log_group" "xsiam_delivery_group" {
   count             = var.build_firehose && length(var.kinesis_endpoint_url) > 0 ? 1 : 0
   name              = "${var.tags_prefix}-xsiam-delivery-group"
   tags              = try(var.tags_common, {})
-  retention_in_days = 366
+  retention_in_days = 400 # Because it's more than a year.
 }
 
 resource "aws_cloudwatch_log_stream" "xsiam_delivery_stream" {
@@ -307,7 +307,7 @@ resource "aws_s3_bucket_versioning" "xsiam_firehose_bucket_versioning" {
 
 # By default s3 already blocks public access but this added for the tfsec & checkov checks.
 resource "aws_s3_bucket_public_access_block" "xsiam_firehose_bucket_block_public" {
-  bucket = aws_s3_bucket.xsiam_firehose_bucket.id
+  bucket = aws_s3_bucket.xsiam_firehose_bucket[count.index].id
   block_public_acls       = true
   block_public_policy     = true
   ignore_public_acls      = true
