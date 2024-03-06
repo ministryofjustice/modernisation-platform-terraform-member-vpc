@@ -1,5 +1,5 @@
 
-# Sharing log data with SecOps via Firehose.check "name".check "name"
+# Sharing log data with SecOps via AWS Firehose & a subscription on the cloudwatch log that contains flow log data.
 
 # To build the firehose resources we want the following to be true:
 # - var.build_firehose is true
@@ -7,34 +7,6 @@
 # This ensures that we don't try and build the resources without an endpoint provided.
 
 # Note that var.tags_prefix includes the environment name so we don't need to include that in the name as a separate variable.
-
-
-
-# resource "aws_cloudwatch_log_destination" "kinesis_endpoint_destination" {
-#   name       = "${var.tags_prefix}-kinesis_endpoint_destination-destination"
-#   role_arn   = aws_iam_role.iam_for_cloudwatch.arn # needs to be a secret
-#   target_arn = aws_kinesis_stream.kinesis_for_cloudwatch.arn # arn of the endpoint?
-# }
-
-# We don't need a new flow log as we have a subscription to the existing log. This is only needed if we are transfering data to a firehose stream in another account.
-
-# resource "aws_flow_log" "firehose" {
-#   count                    = var.build_firehose && length(var.kinesis_endpoint_url) > 0 ? 1 : 0 # Builds the resource if this var is true, else do nothing.
-#   iam_role_arn             = var.vpc_flow_log_iam_role
-#   log_destination          = aws_kinesis_firehose_delivery_stream.firehose_stream[count.index].arn
-#   max_aggregation_interval = "60"
-#   traffic_type             = "ALL"
-#   log_destination_type     = "kinesis-data-firehose"
-#   vpc_id                   = aws_vpc.vpc.id
-
-#   tags = merge(
-#     var.tags_common,
-#     {
-#       Name = "${var.tags_prefix}-vpc-flow-log-firehose-${random_id.flow_logs.hex}"
-#     }
-#   )
-# }
-
 
 
 resource "aws_kinesis_firehose_delivery_stream" "firehose_stream" {
