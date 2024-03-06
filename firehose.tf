@@ -19,7 +19,7 @@ resource "aws_kinesis_firehose_delivery_stream" "firehose_stream" {
   tags = try(var.tags_common, {})
 
   server_side_encryption {
-    enabled = true    
+    enabled = true
   }
 
   http_endpoint_configuration {
@@ -94,8 +94,8 @@ resource "aws_iam_role" "xsiam_kinesis_firehose_role" {
 resource "aws_iam_role_policy" "xsiam_kinesis_firehose_role_policy" {
   #checkov:skip=CKV_AWS_355: - Ignore for now whilst we look into this.
   count = var.build_firehose && length(var.kinesis_endpoint_url) > 0 ? 1 : 0
-  role = aws_iam_role.xsiam_kinesis_firehose_role[count.index].id
-  name = "${var.tags_prefix}-xsiam-kinesis-firehose-role-policy"
+  role  = aws_iam_role.xsiam_kinesis_firehose_role[count.index].id
+  name  = "${var.tags_prefix}-xsiam-kinesis-firehose-role-policy"
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
@@ -307,8 +307,8 @@ resource "aws_s3_bucket_versioning" "xsiam_firehose_bucket_versioning" {
 
 # By default s3 already blocks public access but this added for the tfsec & checkov checks.
 resource "aws_s3_bucket_public_access_block" "xsiam_firehose_bucket_block_public" {
-  count  = var.build_firehose && length(var.kinesis_endpoint_url) > 0 ? 1 : 0
-  bucket = aws_s3_bucket.xsiam_firehose_bucket[count.index].id
+  count                   = var.build_firehose && length(var.kinesis_endpoint_url) > 0 ? 1 : 0
+  bucket                  = aws_s3_bucket.xsiam_firehose_bucket[count.index].id
   block_public_acls       = true
   block_public_policy     = true
   ignore_public_acls      = true
