@@ -169,7 +169,7 @@ resource "aws_iam_policy" "s3_kinesis_xsiam_policy" {
         ]
         Effect = "Allow"
         Resource = [
-          "${aws_s3_bucket.xsiam_firehose_bucket[count.index].arn}",
+          aws_s3_bucket.xsiam_firehose_bucket[count.index].arn,
           "${aws_s3_bucket.xsiam_firehose_bucket[count.index].arn}/*"
         ]
       }
@@ -242,13 +242,15 @@ resource "aws_iam_role_policy_attachment" "put_record_policy_attachment" {
 }
 
 
-# S3 Bucket to hold the transfer failure logs. We are using the default s3 key and no logging as it is not needed.
+# S3 Bucket to hold the transfer failure logs. We are using the default s3 key and no logging as it is not needed. We also have public access blocked by default
 
 #tfsec:ignore:aws-ssm-secret-use-customer-key
 #tfsec:ignore:aws-s3-encryption-customer-key
-#tfsec:ignore:aws-s3-enable-bucket-logging 
+#tfsec:ignore:aws-s3-enable-bucket-logging
+#tfsec:ignore:aws-s3-specify-public-access-block
 resource "aws_s3_bucket" "xsiam_firehose_bucket" {
   #checkov:skip=CKV_AWS_241: We have encryption already in place using the default s3 kms key.
+  #checkov:skip=CKV_AWS_21: We already have versioning enabled.
   #checkov:skip=CKV_AWS_145: We use the default encryption key.
   #checkov:skip=CKV2_AWS_62: We do not need event notifications enabled.
   #checkov:skip=CKV_AWS_144: We are not using cross-region replication.
