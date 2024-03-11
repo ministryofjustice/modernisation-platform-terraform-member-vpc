@@ -28,7 +28,7 @@ variable "vpc_flow_log_iam_role" {
 }
 
 
-variable build_firehose {
+variable "build_firehose" {
   description = "Whether we want to build the firehose resources in the environment or not"
   type        = bool
 }
