@@ -27,10 +27,13 @@ variable "vpc_flow_log_iam_role" {
   type        = string
 }
 
+
 variable "build_firehose" {
-  description = "boolean for whether AWS Firehose resources are built in the environment"
+  description = "Whether we want to build the firehose resources in the environment or not"
   type        = bool
 }
+
+# Both of the following variables are required for the firehose resources to build.
 
 variable "kinesis_endpoint_url" {
   description = "The aws kinesis http endpoint that the log data will be sent to"
