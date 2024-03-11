@@ -15,7 +15,7 @@ locals {
 
 resource "aws_kinesis_firehose_delivery_stream" "firehose_stream" {
   #checkov:skip=CKV_AWS_241: We are using the default key for encryption.
-  count = local.go-build == true ? 1 : 0
+  count       = local.go-build == true ? 1 : 0
   name        = "${var.tags_prefix}-xsiam-delivery-stream"
   destination = "http_endpoint"
 
@@ -97,8 +97,8 @@ resource "aws_iam_role" "xsiam_kinesis_firehose_role" {
 resource "aws_iam_role_policy" "xsiam_kinesis_firehose_role_policy" {
   #checkov:skip=CKV_AWS_355: - Ignore for now whilst we look into this.
   count = local.go-build == true ? 1 : 0
-  role = aws_iam_role.xsiam_kinesis_firehose_role[count.index].id
-  name = "${var.tags_prefix}-xsiam-kinesis-firehose-role-policy"
+  role  = aws_iam_role.xsiam_kinesis_firehose_role[count.index].id
+  name  = "${var.tags_prefix}-xsiam-kinesis-firehose-role-policy"
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
@@ -118,7 +118,7 @@ resource "aws_iam_role_policy" "xsiam_kinesis_firehose_role_policy" {
 }
 
 resource "aws_iam_role_policy_attachment" "kinesis_firehose_error_log_role_attachment" {
-  count = local.go-build == true ? 1 : 0
+  count      = local.go-build == true ? 1 : 0
   policy_arn = aws_iam_policy.xsiam_kinesis_firehose_error_log_policy[count.index].arn
   role       = aws_iam_role.xsiam_kinesis_firehose_role[count.index].name
 
@@ -147,7 +147,7 @@ resource "aws_iam_policy" "xsiam_kinesis_firehose_error_log_policy" {
 }
 
 resource "aws_iam_role_policy_attachment" "kinesis_role_attachment" {
-  count = local.go-build == true ? 1 : 0
+  count      = local.go-build == true ? 1 : 0
   policy_arn = aws_iam_policy.s3_kinesis_xsiam_policy[count.index].arn
   role       = aws_iam_role.xsiam_kinesis_firehose_role[count.index].name
 
@@ -187,7 +187,7 @@ resource "aws_iam_policy" "s3_kinesis_xsiam_policy" {
 # This acts as the interface between the flow log data in cloudwatch & the Firehose Stream.
 
 resource "aws_cloudwatch_log_subscription_filter" "nacs_server_xsiam_subscription" {
-  count = local.go-build == true ? 1 : 0
+  count           = local.go-build == true ? 1 : 0
   name            = "${var.tags_prefix}-nacs_server_xsiam_subscription"
   role_arn        = aws_iam_role.put_record_role[count.index].arn
   log_group_name  = aws_flow_log.cloudwatch.log_group_name
@@ -196,7 +196,7 @@ resource "aws_cloudwatch_log_subscription_filter" "nacs_server_xsiam_subscriptio
 }
 
 resource "aws_iam_role" "put_record_role" {
-  count = local.go-build == true ? 1 : 0
+  count              = local.go-build == true ? 1 : 0
   name_prefix        = "${var.tags_prefix}-put-record-role"
   tags               = try(var.tags_common, {})
   assume_role_policy = <<EOF
@@ -217,7 +217,7 @@ EOF
 }
 
 resource "aws_iam_policy" "put_record_policy" {
-  count = local.go-build == true ? 1 : 0
+  count       = local.go-build == true ? 1 : 0
   name_prefix = "${var.tags_prefix}-put-record-policy"
   tags        = try(var.tags_common, {})
   policy      = <<-EOF
@@ -240,7 +240,7 @@ EOF
 }
 
 resource "aws_iam_role_policy_attachment" "put_record_policy_attachment" {
-  count = local.go-build == true ? 1 : 0
+  count      = local.go-build == true ? 1 : 0
   role       = aws_iam_role.put_record_role[count.index].name
   policy_arn = aws_iam_policy.put_record_policy[count.index].arn
 }
@@ -265,7 +265,7 @@ resource "aws_s3_bucket" "xsiam_firehose_bucket" {
   #checkov:skip=CKV_AWS_18: No access logging required
   #checkov:skip=CKV2_AWS_61: Lifecycle is enabled but this error still gets thrown.
   #checkov:skip=CKV2_AWS_6: Public Access Block enabled - see below - but the error still gets thrown.
-  count = local.go-build == true ? 1 : 0
+  count  = local.go-build == true ? 1 : 0
   bucket = "${var.tags_prefix}-xsiam-firehose-bucket"
   tags   = try(var.tags_common, {})
 }
@@ -273,7 +273,7 @@ resource "aws_s3_bucket" "xsiam_firehose_bucket" {
 #tfsec:ignore:aws-ssm-secret-use-customer-key
 #tfsec:ignore:aws-s3-encryption-customer-key
 resource "aws_s3_bucket_server_side_encryption_configuration" "xsiam_firehose_bucket_encryption" {
-  count = local.go-build == true ? 1 : 0
+  count  = local.go-build == true ? 1 : 0
   bucket = aws_s3_bucket.xsiam_firehose_bucket[count.index].id
   rule {
     apply_server_side_encryption_by_default {
@@ -284,7 +284,7 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "xsiam_firehose_bu
 
 resource "aws_s3_bucket_lifecycle_configuration" "xsiam_firehose_bucket_config" {
   #checkov:skip=CKV_AWS_300: Event notifications not used.
-  count = local.go-build == true ? 1 : 0
+  count  = local.go-build == true ? 1 : 0
   bucket = aws_s3_bucket.xsiam_firehose_bucket[count.index].id
   rule {
     id = "delete-old"
@@ -301,7 +301,7 @@ resource "aws_s3_bucket_lifecycle_configuration" "xsiam_firehose_bucket_config" 
 
 # Ideally we would not be using versioning of s3 files but it's added for the tfsec & checkov checks.
 resource "aws_s3_bucket_versioning" "xsiam_firehose_bucket_versioning" {
-  count = local.go-build == true ? 1 : 0
+  count  = local.go-build == true ? 1 : 0
   bucket = aws_s3_bucket.xsiam_firehose_bucket[count.index].id
   versioning_configuration {
     status = "Enabled"
@@ -310,8 +310,8 @@ resource "aws_s3_bucket_versioning" "xsiam_firehose_bucket_versioning" {
 
 # By default s3 already blocks public access but this added for the tfsec & checkov checks.
 resource "aws_s3_bucket_public_access_block" "xsiam_firehose_bucket_block_public" {
-  count = local.go-build == true ? 1 : 0
-  bucket = aws_s3_bucket.xsiam_firehose_bucket[count.index].id
+  count                   = local.go-build == true ? 1 : 0
+  bucket                  = aws_s3_bucket.xsiam_firehose_bucket[count.index].id
   block_public_acls       = true
   block_public_policy     = true
   ignore_public_acls      = true
