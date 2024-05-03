@@ -39,7 +39,7 @@ locals {
   vpc_name              = var.networking[0].business-unit
   subnet_set            = var.networking[0].set
   subnet_sets = {
-    "general" = "10.0.0.0/16"
+    "general" = "192.168.0.0/20"
   }
   # transit_gateway_id    = var.networking[0].transit_gateway_id
   additional_endpoints  = [""]
