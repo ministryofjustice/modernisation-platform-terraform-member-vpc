@@ -29,20 +29,20 @@ locals {
   )
 
   tags_common = {
-    Name = "testing"
+    Name        = "testing"
     Environment = "test"
   }
 
   tags_prefix = "testing"
 
-  environment           = trimprefix("testing-test", "${var.networking[0].application}-")
-  vpc_name              = var.networking[0].business-unit
-  subnet_set            = var.networking[0].set
+  environment = trimprefix("testing-test", "${var.networking[0].application}-")
+  vpc_name    = var.networking[0].business-unit
+  subnet_set  = var.networking[0].set
   subnet_sets = {
     "general" = "192.168.0.0/20"
   }
   # transit_gateway_id    = var.networking[0].transit_gateway_id
-  additional_endpoints  = [""]
+  additional_endpoints = [""]
 
   is_live       = [substr("testing-test", length(local.application_name), length(terraform.workspace)) == "-production" || substr(terraform.workspace, length(local.application_name), length(terraform.workspace)) == "-preproduction" ? "live" : "non-live"]
   provider_name = "core-vpc-${local.environment}"
