@@ -1,6 +1,6 @@
 module github.com/ministryofjustice/modernisation-platform-terraform-member-vpc
 
-go 1.21.1
+go 1.22
 
 require (
 	github.com/gruntwork-io/terratest v0.46.14
