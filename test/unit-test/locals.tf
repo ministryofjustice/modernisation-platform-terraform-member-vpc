@@ -35,7 +35,7 @@ locals {
 
   tags_prefix = "testing"
 
-  environment = trimprefix("testing-test", "${var.networking[0].application}-")
+  environment = "test"
   vpc_name    = var.networking[0].business-unit
   subnet_set  = var.networking[0].set
   subnet_sets = {
