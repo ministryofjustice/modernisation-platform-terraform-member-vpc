@@ -42,7 +42,7 @@ locals {
     "general" = "192.168.0.0/20"
   }
   # transit_gateway_id    = var.networking[0].transit_gateway_id
-  additional_endpoints = [""]
+  additional_endpoints = ["com.amazonaws.eu-west-2.secretsmanager"]
 
   is_live       = [substr("testing-test", length(local.application_name), length(terraform.workspace)) == "-production" || substr(terraform.workspace, length(local.application_name), length(terraform.workspace)) == "-preproduction" ? "live" : "non-live"]
   provider_name = "core-vpc-${local.environment}"
