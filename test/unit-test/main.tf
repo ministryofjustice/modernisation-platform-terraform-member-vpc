@@ -76,21 +76,21 @@ resource "aws_cloudwatch_log_group" "default" {
   retention_in_days = 731 # 0 = never expire
 }
 
-# resource "aws_flow_log" "cloudwatch" {
-#   iam_role_arn             = local.vpc_flow_log_iam_role
-#   log_destination          = aws_cloudwatch_log_group.default.arn
-#   max_aggregation_interval = "60"
-#   traffic_type             = "ALL"
-#   log_destination_type     = "cloud-watch-logs"
-#   vpc_id                   = aws_vpc.vpc.id
+resource "aws_flow_log" "cloudwatch" {
+  iam_role_arn             = local.vpc_flow_log_iam_role
+  log_destination          = aws_cloudwatch_log_group.default.arn
+  max_aggregation_interval = "60"
+  traffic_type             = "ALL"
+  log_destination_type     = "cloud-watch-logs"
+  vpc_id                   = aws_vpc.vpc.id
 
-#   tags = merge(
-#     local.tags_common,
-#     {
-#       Name = "${local.tags_prefix}-vpc-flow-logs-${random_id.flow_logs.hex}"
-#     }
-#   )
-# }
+  tags = merge(
+    local.tags_common,
+    {
+      Name = "${local.tags_prefix}-vpc-flow-logs-${random_id.flow_logs.hex}"
+    }
+  )
+}
 
 resource "aws_vpc_ipv4_cidr_block_association" "subnet_sets" {
   for_each = {

@@ -10,7 +10,8 @@ data "http" "environments_file" {
 locals {
 
   application_name = "testing"
-
+  vpc_flow_log_iam_role = "arn:aws:iam::${local.environment_management.account_ids["testing-test"]}:role/TestingTestMemberInfrastructureAccess"
+                        
   environment_management = jsondecode(data.aws_secretsmanager_secret_version.environment_management.secret_string)
 
   # This takes the name of the Terraform workspace (e.g. core-vpc-production), strips out the application name (e.g. core-vpc), and checks if
