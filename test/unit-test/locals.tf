@@ -147,5 +147,5 @@ locals {
     local.ssm_endpoints,
     local.additional_endpoints
   )
-  
+
 }
