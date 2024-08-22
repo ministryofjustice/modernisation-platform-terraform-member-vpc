@@ -75,3 +75,7 @@ output "private_route_tables" {
     if substr(key, length(key) - 6, length(key)) != "public"
   }
 }
+
+output "vpc_flow_log" {
+  value = aws_cloudwatch_log_group.default.name
+}
