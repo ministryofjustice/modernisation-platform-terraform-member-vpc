@@ -26,21 +26,3 @@ variable "vpc_flow_log_iam_role" {
   description = "VPC Flow Log IAM role ARN for VPC Flow Logs to CloudWatch"
   type        = string
 }
-
-
-variable "build_firehose" {
-  description = "Whether we want to build the firehose resources in the environment or not"
-  type        = bool
-}
-
-# Both of the following variables are required for the firehose resources to build.
-
-variable "kinesis_endpoint_url" {
-  description = "The aws kinesis http endpoint that the log data will be sent to"
-  type        = string
-}
-
-variable "kinesis_endpoint_secret_string" {
-  description = "The secret that contains the endpoint key"
-  type        = string
-}
