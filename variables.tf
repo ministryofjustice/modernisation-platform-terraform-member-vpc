@@ -9,7 +9,7 @@ variable "build_firehose" {
 }
 
 variable "flow_log_s3_destination_arn" {
-  description = ""
+  description = "Optionally supply an ARN of an S3 bucket to send flow logs to"
   default     = ""
   type        = string
 }
