@@ -1,3 +1,19 @@
+variable "additional_endpoints" {
+  description = "additional endpoints required for VPC"
+  type        = list(any)
+}
+
+variable "build_firehose" {
+  description = "Whether we want to build the firehose resources in the environment or not"
+  type        = bool
+}
+
+variable "flow_log_s3_destination_arn" {
+  description = "Optionally supply an ARN of an S3 bucket to send flow logs to"
+  default     = ""
+  type        = string
+}
+
 variable "subnet_sets" {
   type = map(any)
 }
@@ -17,20 +33,9 @@ variable "transit_gateway_id" {
   type        = string
 }
 
-variable "additional_endpoints" {
-  description = "additional endpoints required for VPC"
-  type        = list(any)
-}
-
 variable "vpc_flow_log_iam_role" {
   description = "VPC Flow Log IAM role ARN for VPC Flow Logs to CloudWatch"
   type        = string
-}
-
-
-variable "build_firehose" {
-  description = "Whether we want to build the firehose resources in the environment or not"
-  type        = bool
 }
 
 # Both of the following variables are required for the firehose resources to build.
