@@ -3,11 +3,6 @@ variable "additional_endpoints" {
   type        = list(any)
 }
 
-variable "build_firehose" {
-  description = "Whether we want to build the firehose resources in the environment or not"
-  type        = bool
-}
-
 variable "flow_log_s3_destination_arn" {
   description = "Optionally supply an ARN of an S3 bucket to send flow logs to"
   default     = ""
