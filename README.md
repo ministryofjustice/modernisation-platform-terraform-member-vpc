@@ -37,6 +37,7 @@ No modules.
 | [aws_cloudwatch_log_subscription_filter.nacs_server_xsiam_subscription](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cloudwatch_log_subscription_filter) | resource |
 | [aws_default_security_group.default](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/default_security_group) | resource |
 | [aws_flow_log.cloudwatch](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/flow_log) | resource |
+| [aws_flow_log.s3](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/flow_log) | resource |
 | [aws_iam_policy.put_record_policy](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_policy) | resource |
 | [aws_iam_policy.s3_kinesis_xsiam_policy](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_policy) | resource |
 | [aws_iam_policy.xsiam_kinesis_firehose_error_log_policy](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_policy) | resource |
@@ -79,6 +80,7 @@ No modules.
 |------|-------------|------|---------|:--------:|
 | <a name="input_additional_endpoints"></a> [additional\_endpoints](#input\_additional\_endpoints) | additional endpoints required for VPC | `list(any)` | n/a | yes |
 | <a name="input_build_firehose"></a> [build\_firehose](#input\_build\_firehose) | Whether we want to build the firehose resources in the environment or not | `bool` | n/a | yes |
+| <a name="input_flow_log_s3_destination_arn"></a> [flow\_log\_s3\_destination\_arn](#input\_flow\_log\_s3\_destination\_arn) | Optionally supply an ARN of an S3 bucket to send flow logs to | `string` | `""` | no |
 | <a name="input_kinesis_endpoint_secret_string"></a> [kinesis\_endpoint\_secret\_string](#input\_kinesis\_endpoint\_secret\_string) | The secret that contains the endpoint key | `string` | n/a | yes |
 | <a name="input_kinesis_endpoint_url"></a> [kinesis\_endpoint\_url](#input\_kinesis\_endpoint\_url) | The aws kinesis http endpoint that the log data will be sent to | `string` | n/a | yes |
 | <a name="input_subnet_sets"></a> [subnet\_sets](#input\_subnet\_sets) | n/a | `map(any)` | n/a | yes |
@@ -102,6 +104,7 @@ No modules.
 | <a name="output_protected_subnet_ids"></a> [protected\_subnet\_ids](#output\_protected\_subnet\_ids) | n/a |
 | <a name="output_public_subnet_ids"></a> [public\_subnet\_ids](#output\_public\_subnet\_ids) | n/a |
 | <a name="output_tgw_subnet_ids"></a> [tgw\_subnet\_ids](#output\_tgw\_subnet\_ids) | Transit Gateway subnet IDs |
+| <a name="output_vpc_flow_log"></a> [vpc\_flow\_log](#output\_vpc\_flow\_log) | n/a |
 | <a name="output_vpc_id"></a> [vpc\_id](#output\_vpc\_id) | VPC ID |
 <!-- END_TF_DOCS -->
 
