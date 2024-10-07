@@ -32,3 +32,9 @@ variable "vpc_flow_log_iam_role" {
   description = "VPC Flow Log IAM role ARN for VPC Flow Logs to CloudWatch"
   type        = string
 }
+
+variable "region" {
+  description = "The AWS region to deploy resources in"
+  type        = string
+  default     = "eu-west-2"
+}
