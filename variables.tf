@@ -33,8 +33,3 @@ variable "vpc_flow_log_iam_role" {
   type        = string
 }
 
-variable "region" {
-  description = "The AWS region to deploy resources in"
-  type        = string
-  default     = "eu-west-2"
-}
