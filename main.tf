@@ -3,6 +3,8 @@ data "aws_availability_zones" "available" {
   state = "available"
 }
 
+data "aws_region" "current" {}
+
 locals {
   availability_zones = sort(data.aws_availability_zones.available.names)
 
@@ -92,11 +94,12 @@ locals {
 
   # SSM Endpoints (Systems Session Manager)
   ssm_endpoints = [
-    "com.amazonaws.eu-west-2.ec2",
-    "com.amazonaws.eu-west-2.ec2messages",
-    "com.amazonaws.eu-west-2.ssm",
-    "com.amazonaws.eu-west-2.ssmmessages",
+    "com.amazonaws.${data.aws_region.current.name}.ec2",
+    "com.amazonaws.${data.aws_region.current.name}.ec2messages",
+    "com.amazonaws.${data.aws_region.current.name}.ssm",
+    "com.amazonaws.${data.aws_region.current.name}.ssmmessages",
   ]
+
 
   # Merge SSM endpoints with VPC requested endpoints
   merged_endpoint_list = concat(
