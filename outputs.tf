@@ -3,6 +3,11 @@ output "vpc_id" {
   value       = aws_vpc.vpc.id
 }
 
+output "vpc_cidr" {
+  description = "VPC CIDR block"
+  value       = aws_vpc.vpc.cidr_block
+}
+
 output "tgw_subnet_ids" {
   description = "Transit Gateway subnet IDs"
   value = [
