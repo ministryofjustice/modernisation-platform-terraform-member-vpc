@@ -3,6 +3,9 @@ terraform {
     aws = {
       version = "~> 5.0"
       source  = "hashicorp/aws"
+      configuration_aliases = [
+        aws.core-network-services
+      ]
     }
     random = {
       source  = "hashicorp/random"
