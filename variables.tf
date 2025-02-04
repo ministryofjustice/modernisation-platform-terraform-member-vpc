@@ -23,10 +23,10 @@ variable "tags_prefix" {
   type        = string
 }
 
-variable "transit_gateway_id" {
-  description = "tgw ID"
-  type        = string
-}
+# variable "transit_gateway_id" {
+#   description = "tgw ID"
+#   type        = string
+# }
 
 variable "vpc_flow_log_iam_role" {
   description = "VPC Flow Log IAM role ARN for VPC Flow Logs to CloudWatch"
