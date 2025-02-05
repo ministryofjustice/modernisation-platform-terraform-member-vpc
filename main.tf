@@ -26,15 +26,6 @@ data "aws_ram_resource_share" "transit-gateway" {
 data "aws_caller_identity" "transit-gateway-tenant" {
 }
 
-## Add the tenant account to the Transit Gateway Resource Share
-## REMOVAL OF THIS RESOURCE WILL STOP ALL VPC ACCOUNT TRAFFIC VIA THE TRANSIT GATEWAY
-resource "aws_ram_principal_association" "transit_gateway_association" {
-  provider = aws.core-network-services
-
-  principal          = data.aws_caller_identity.transit-gateway-tenant.account_id
-  resource_share_arn = data.aws_ram_resource_share.transit-gateway.arn
-}
-
 ## Look up Transit Gateway Route Tables in the host account to associate with
 data "aws_ec2_transit_gateway_route_table" "default" {
   provider = aws.core-network-services
@@ -491,6 +482,15 @@ resource "aws_vpc_endpoint" "ssm_s3" {
 
 # Transit Gateway Attachment Resources
 
+# ## Add the tenant account to the Transit Gateway Resource Share
+# ## REMOVAL OF THIS RESOURCE WILL STOP ALL VPC ACCOUNT TRAFFIC VIA THE TRANSIT GATEWAY
+# resource "aws_ram_principal_association" "transit_gateway_association" {
+#   provider = aws.core-network-services
+
+#   principal          = data.aws_caller_identity.transit-gateway-tenant.account_id
+#   resource_share_arn = data.aws_ram_resource_share.transit-gateway.arn
+# }
+
 ## Due to propagation in AWS, a RAM share will take up to 60 seconds to appear in an account,
 ## so we need to wait before attaching our tenant VPCs to it
 resource "time_sleep" "wait_60_seconds" {
@@ -499,7 +499,9 @@ resource "time_sleep" "wait_60_seconds" {
 
 ## Attach provided subnet IDs and VPC to the provided Transit Gateway ID
 resource "aws_ec2_transit_gateway_vpc_attachment" "default" {
-  #   provider = aws.transit-gateway-tenant
+  depends_on = [
+    time_sleep.wait_60_seconds
+  ]
 
   subnet_ids = [
     for key, subnet in aws_subnet.subnets :
@@ -525,10 +527,6 @@ resource "aws_ec2_transit_gateway_vpc_attachment" "default" {
   lifecycle {
     prevent_destroy = true
   }
-
-  depends_on = [
-    time_sleep.wait_60_seconds
-  ]
 }
 
 ## Associate the Transit Gateway Route Table with the VPC
