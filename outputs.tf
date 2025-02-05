@@ -87,3 +87,8 @@ output "tgw_vpc_attachment" {
 output "tgw_route_table" {
   value = data.aws_ec2_transit_gateway_route_table.default.id
 }
+
+output "vpc_cidr" {
+  description = "VPC CIDR block"
+  value       = aws_vpc.vpc.cidr_block
+}
