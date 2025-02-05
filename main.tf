@@ -541,7 +541,11 @@ resource "aws_ec2_transit_gateway_route_table_association" "default" {
 
 ## Retag the new Transit Gateway VPC attachment in the Transit Gateway host
 resource "aws_ec2_tag" "retag" {
-  for_each = var.tags_common
+  for_each = merge(
+    var.tags_common,
+    { "Name" = format("%s-attachment", var.tags_prefix) }
+  )
+
   provider = aws.core-network-services
 
   resource_id = aws_ec2_transit_gateway_vpc_attachment.default.id
