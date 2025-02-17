@@ -13,7 +13,7 @@ data "aws_ec2_transit_gateway_route_table" "type" {
 }
 
 resource "aws_ec2_transit_gateway_vpc_attachment" "main" {
-  subnet_ids = [ for key, subnet in aws_subnet.subnets : subnet.id if substr(key, 0, 15) == "transit-gateway" ]
+  subnet_ids                                      = [for key, subnet in aws_subnet.subnets : subnet.id if substr(key, 0, 15) == "transit-gateway"]
   transit_gateway_id                              = var.transit_gateway_id
   vpc_id                                          = aws_vpc.vpc.id
   appliance_mode_support                          = "disable"
