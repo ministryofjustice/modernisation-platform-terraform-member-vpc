@@ -100,7 +100,6 @@ locals {
     "com.amazonaws.${data.aws_region.current.name}.ssmmessages",
   ]
 
-
   # Merge SSM endpoints with VPC requested endpoints
   merged_endpoint_list = concat(
     local.ssm_endpoints,
@@ -109,7 +108,6 @@ locals {
 
   # Custom VPC flow log statement
   custom_flow_log_format = "$${version} $${account-id} $${interface-id} $${srcaddr} $${dstaddr} $${srcport} $${dstport} $${protocol} $${packets} $${bytes} $${start} $${end} $${action} $${log-status} $${vpc-id} $${subnet-id} $${instance-id} $${tcp-flags} $${type} $${pkt-srcaddr} $${pkt-dstaddr} $${region} $${az-id} $${sublocation-type} $${sublocation-id} $${pkt-src-aws-service} $${pkt-dst-aws-service} $${flow-direction} $${traffic-path}"
-
 
 }
 
@@ -290,12 +288,14 @@ resource "aws_route_table" "route_tables" {
     }
   )
 }
+
 resource "aws_route_table_association" "route_table_associations" {
   for_each = tomap(local.all_distinct_route_table_associations)
 
   subnet_id      = aws_subnet.subnets[each.key].id
   route_table_id = aws_route_table.route_tables[each.value].id
 }
+
 resource "aws_route" "public_internet_gateway" {
   for_each = {
     for key, route_table in aws_route_table.route_tables :
