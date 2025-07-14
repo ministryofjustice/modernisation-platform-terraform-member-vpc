@@ -94,10 +94,10 @@ locals {
 
   # SSM Endpoints (Systems Session Manager)
   ssm_endpoints = [
-    "com.amazonaws.${data.aws_region.current.name}.ec2",
-    "com.amazonaws.${data.aws_region.current.name}.ec2messages",
-    "com.amazonaws.${data.aws_region.current.name}.ssm",
-    "com.amazonaws.${data.aws_region.current.name}.ssmmessages",
+    "com.amazonaws.${data.aws_region.current.region}.ec2",
+    "com.amazonaws.${data.aws_region.current.region}.ec2messages",
+    "com.amazonaws.${data.aws_region.current.region}.ssm",
+    "com.amazonaws.${data.aws_region.current.region}.ssmmessages",
   ]
 
   # Merge SSM endpoints with VPC requested endpoints
@@ -428,7 +428,7 @@ resource "aws_vpc_endpoint" "ssm_interfaces" {
 resource "aws_vpc_endpoint" "ssm_s3" {
 
   vpc_id            = aws_vpc.vpc.id
-  service_name      = "com.amazonaws.${data.aws_region.current.name}.s3"
+  service_name      = "com.amazonaws.${data.aws_region.current.region}.s3"
   vpc_endpoint_type = "Gateway"
 
   route_table_ids = [
@@ -439,7 +439,7 @@ resource "aws_vpc_endpoint" "ssm_s3" {
   tags = merge(
     var.tags_common,
     {
-      Name = "${var.tags_prefix}-com.amazonaws.${data.aws_region.current.name}.s3"
+      Name = "${var.tags_prefix}-com.amazonaws.${data.aws_region.current.region}.s3"
     }
   )
 }
