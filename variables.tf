@@ -43,3 +43,8 @@ variable "vpc_flow_log_iam_role" {
   type        = string
 }
 
+variable "secondary_cidr_blocks" {
+  description = "List of secondary CIDR blocks to associate with the VPC for additional subnet capacity"
+  type        = list(string)
+  default     = []
+}
