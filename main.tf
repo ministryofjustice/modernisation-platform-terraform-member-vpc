@@ -506,13 +506,8 @@ resource "aws_route_table" "secondary_cidr_private" {
 resource "aws_route_table_association" "secondary_cidr_private" {
   for_each = aws_subnet.secondary_cidr_private
 
-  # Find the matching CIDR block for this subnet and use its route table
-  route_table_id = [
-    for cidr_block in var.secondary_cidr_blocks :
-    aws_route_table.secondary_cidr_private[cidr_block].id
-    if can(regex("^${cidr_block}", each.value.cidr_block))
-  ][0]
-  subnet_id = each.value.id
+  route_table_id = aws_route_table.secondary_cidr_private[local.secondary_cidr_subnets_with_keys[each.key].cidr_block_key].id
+  subnet_id      = each.value.id
 }
 
 # Route all traffic via Transit Gateway for secondary CIDR subnets

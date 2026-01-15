@@ -361,12 +361,8 @@ resource "aws_route_table" "secondary_cidr_private" {
 resource "aws_route_table_association" "secondary_cidr_private" {
   for_each = aws_subnet.secondary_cidr_private
 
-  route_table_id = [
-    for cidr_block in local.secondary_cidr_blocks :
-    aws_route_table.secondary_cidr_private[cidr_block].id
-    if can(regex("^${cidr_block}", each.value.cidr_block))
-  ][0]
-  subnet_id = each.value.id
+  route_table_id = aws_route_table.secondary_cidr_private[local.secondary_cidr_subnets_with_keys[each.key].cidr_block_key].id
+  subnet_id      = each.value.id
 }
 
 # Create Network ACL for secondary CIDR subnets
