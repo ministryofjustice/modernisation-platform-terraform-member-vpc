@@ -43,7 +43,8 @@ locals {
     "general" = "192.168.0.0/20"
   }
   # transit_gateway_id    = var.networking[0].transit_gateway_id
-  additional_endpoints = ["com.amazonaws.eu-west-2.secretsmanager"]
+  additional_endpoints  = ["com.amazonaws.eu-west-2.secretsmanager"]
+  secondary_cidr_blocks = ["192.168.16.0/20"]
 
   is_live       = [substr("testing-test", length(local.application_name), length(terraform.workspace)) == "-production" || substr(terraform.workspace, length(local.application_name), length(terraform.workspace)) == "-preproduction" ? "live" : "non-live"]
   provider_name = "core-vpc-${local.environment}"
@@ -148,5 +149,23 @@ locals {
     local.ssm_endpoints,
     local.additional_endpoints
   )
+
+  # Secondary CIDR blocks
+  # Create subnets for each secondary CIDR block across all availability zones
+  secondary_cidr_subnets = flatten([
+    for cidr_block in local.secondary_cidr_blocks : [
+      for index, az in local.availability_zones : {
+        cidr_block_key = cidr_block
+        cidr           = cidrsubnet(cidr_block, 3, index)
+        az             = az
+        index          = index
+      }
+    ]
+  ])
+
+  secondary_cidr_subnets_with_keys = {
+    for subnet in local.secondary_cidr_subnets :
+    "${subnet.cidr_block_key}-${subnet.az}" => subnet
+  }
 
 }

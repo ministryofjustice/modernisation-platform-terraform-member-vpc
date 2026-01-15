@@ -40,8 +40,11 @@ output "non_tgw_subnet_arns_by_subnetset" {
       if substr(subnet.key, 0, length(set)) == set
     }
     },
-    { "protected" = { for key, subnet in aws_subnet.protected : key => subnet.arn }
-  })
+    { "protected" = { for key, subnet in aws_subnet.protected : key => subnet.arn } },
+    length(local.secondary_cidr_blocks) > 0 ? {
+      "general-secondary" = { for key, subnet in aws_subnet.secondary_cidr_private : key => subnet.arn }
+    } : {}
+  )
 }
 
 output "expanded_worker_subnets_assocation" {
@@ -74,4 +77,14 @@ output "private_route_tables" {
     key => aws_route_table.route_tables[key].id
     if substr(key, length(key) - 6, length(key)) != "public"
   }
+}
+
+output "secondary_cidr_blocks" {
+  description = "List of secondary CIDR blocks associated with the VPC"
+  value       = local.secondary_cidr_blocks
+}
+
+output "secondary_cidr_subnet_ids" {
+  description = "IDs of subnets created from secondary CIDR blocks"
+  value       = [for subnet in aws_subnet.secondary_cidr_private : subnet.id]
 }
