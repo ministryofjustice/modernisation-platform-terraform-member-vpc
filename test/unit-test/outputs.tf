@@ -75,3 +75,16 @@ output "private_route_tables" {
     if substr(key, length(key) - 6, length(key)) != "public"
   }
 }
+
+output "secondary_cidr_blocks" {
+  description = "Secondary CIDR blocks associated with the VPC"
+  value       = local.secondary_cidr_blocks
+}
+
+output "secondary_cidr_subnet_ids" {
+  description = "Secondary CIDR subnet IDs"
+  value = [
+    for key, subnet in aws_subnet.secondary_cidr_private :
+    subnet.id
+  ]
+}

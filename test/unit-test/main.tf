@@ -315,3 +315,71 @@ resource "aws_vpc_endpoint" "ssm_s3" {
     }
   )
 }
+
+# Secondary CIDR Blocks
+# Associate secondary CIDR blocks to the VPC
+resource "aws_vpc_ipv4_cidr_block_association" "secondary" {
+  for_each = toset(local.secondary_cidr_blocks)
+
+  cidr_block = each.value
+  vpc_id     = aws_vpc.vpc.id
+}
+
+# Create private subnets from secondary CIDR blocks
+resource "aws_subnet" "secondary_cidr_private" {
+  for_each = local.secondary_cidr_subnets_with_keys
+
+  availability_zone = each.value.az
+  cidr_block        = each.value.cidr
+  vpc_id            = aws_vpc.vpc.id
+
+  tags = merge(
+    local.tags_common,
+    {
+      Name = "${local.tags_prefix}-general-private-secondary-${each.value.az}"
+    }
+  )
+
+  depends_on = [aws_vpc_ipv4_cidr_block_association.secondary]
+}
+
+# Create route table for secondary CIDR subnets
+resource "aws_route_table" "secondary_cidr_private" {
+  for_each = toset(local.secondary_cidr_blocks)
+
+  vpc_id = aws_vpc.vpc.id
+
+  tags = merge(
+    local.tags_common,
+    {
+      Name = "${local.tags_prefix}-secondary-private-${each.value}"
+    }
+  )
+}
+
+# Associate route table with secondary CIDR subnets
+resource "aws_route_table_association" "secondary_cidr_private" {
+  for_each = aws_subnet.secondary_cidr_private
+
+  route_table_id = aws_route_table.secondary_cidr_private[local.secondary_cidr_subnets_with_keys[each.key].cidr_block_key].id
+  subnet_id      = each.value.id
+}
+
+# Create Network ACL for secondary CIDR subnets
+resource "aws_network_acl" "secondary_cidr_private" {
+  for_each = toset(local.secondary_cidr_blocks)
+
+  vpc_id = aws_vpc.vpc.id
+  subnet_ids = [
+    for key, subnet in aws_subnet.secondary_cidr_private :
+    subnet.id
+    if can(regex(each.value, subnet.cidr_block))
+  ]
+
+  tags = merge(
+    local.tags_common,
+    {
+      Name = "${local.tags_prefix}-secondary-private-${each.value}"
+    }
+  )
+}
