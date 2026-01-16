@@ -47,4 +47,17 @@ variable "secondary_cidr_blocks" {
   description = "List of secondary CIDR blocks to associate with the VPC for additional subnet capacity"
   type        = list(string)
   default     = []
+
+  validation {
+    condition = alltrue([
+      for cidr in var.secondary_cidr_blocks :
+      can(cidrhost(cidr, 0))
+    ])
+    error_message = "All secondary CIDR blocks must be valid CIDR notation (e.g., 10.27.160.0/21)."
+  }
+
+  validation {
+    condition = length(var.secondary_cidr_blocks) == length(distinct(var.secondary_cidr_blocks))
+    error_message = "Secondary CIDR blocks must not contain duplicates."
+  }
 }

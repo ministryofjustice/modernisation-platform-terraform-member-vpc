@@ -109,6 +109,28 @@ locals {
   # Custom VPC flow log statement
   custom_flow_log_format = "$${version} $${account-id} $${interface-id} $${srcaddr} $${dstaddr} $${srcport} $${dstport} $${protocol} $${packets} $${bytes} $${start} $${end} $${action} $${log-status} $${vpc-id} $${subnet-id} $${instance-id} $${tcp-flags} $${type} $${pkt-srcaddr} $${pkt-dstaddr} $${region} $${az-id} $${sublocation-type} $${sublocation-id} $${pkt-src-aws-service} $${pkt-dst-aws-service} $${flow-direction} $${traffic-path}"
 
+  # Validation: Check for CIDR overlaps between secondary blocks and existing VPC CIDRs
+  # Get all existing VPC CIDRs (primary + additional subnet sets)
+  existing_vpc_cidrs = values(var.subnet_sets)
+
+  # Check each secondary CIDR doesn't overlap with existing VPC CIDRs
+  secondary_cidr_validation = {
+    for secondary_cidr in var.secondary_cidr_blocks :
+    secondary_cidr => [
+      for existing_cidr in local.existing_vpc_cidrs :
+      # CIDRs overlap if either contains the other
+      can(cidrhost(existing_cidr, 0)) && can(cidrhost(secondary_cidr, 0))
+      ? (cidrcontains(existing_cidr, cidrhost(secondary_cidr, 0)) || cidrcontains(secondary_cidr, cidrhost(existing_cidr, 0)))
+      : false
+    ]
+  }
+
+  # Ensure no overlaps detected
+  has_cidr_overlaps = anytrue(flatten([
+    for secondary_cidr, overlap_checks in local.secondary_cidr_validation :
+    overlap_checks
+  ]))
+
   # Secondary CIDR blocks
   # Create subnets for each secondary CIDR block across all availability zones
   secondary_cidr_subnets = flatten([
@@ -468,6 +490,18 @@ resource "aws_vpc_ipv4_cidr_block_association" "secondary" {
 
   cidr_block = each.value
   vpc_id     = aws_vpc.vpc.id
+
+  lifecycle {
+    precondition {
+      condition     = !local.has_cidr_overlaps
+      error_message = <<-EOT
+        Secondary CIDR blocks must not overlap with existing VPC CIDRs.
+        Existing VPC CIDRs: ${jsonencode(local.existing_vpc_cidrs)}
+        Secondary CIDRs: ${jsonencode(var.secondary_cidr_blocks)}
+        Please ensure secondary CIDR blocks are allocated from available IP space that doesn't conflict with the primary VPC CIDR or other subnet sets.
+      EOT
+    }
+  }
 }
 
 # Create private subnets from secondary CIDR blocks
