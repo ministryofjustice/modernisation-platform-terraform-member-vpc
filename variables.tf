@@ -57,7 +57,7 @@ variable "secondary_cidr_blocks" {
   }
 
   validation {
-    condition = length(var.secondary_cidr_blocks) == length(distinct(var.secondary_cidr_blocks))
+    condition     = length(var.secondary_cidr_blocks) == length(distinct(var.secondary_cidr_blocks))
     error_message = "Secondary CIDR blocks must not contain duplicates."
   }
 }
