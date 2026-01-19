@@ -41,8 +41,6 @@ output "non_tgw_subnet_arns_by_subnetset" {
     }
     },
     { "protected" = { for key, subnet in aws_subnet.protected : key => subnet.arn } }
-    # Note: Secondary CIDR subnets excluded from this output to avoid for_each errors with unknown values
-    # Use secondary_cidr_subnet_ids output to reference secondary subnets after creation
   )
 }
 
