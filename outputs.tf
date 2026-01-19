@@ -40,7 +40,10 @@ output "non_tgw_subnet_arns_by_subnetset" {
       if substr(subnet.key, 0, length(set)) == set
     }
     },
-    { "protected" = { for key, subnet in aws_subnet.protected : key => subnet.arn } }
+    { "protected" = { for key, subnet in aws_subnet.protected : key => subnet.arn } },
+    length(var.secondary_cidr_blocks) > 0 ? {
+      "general-secondary" = { for key, subnet in aws_subnet.secondary_cidr_private : key => subnet.arn }
+    } : {}
   )
 }
 
@@ -93,12 +96,4 @@ output "secondary_cidr_blocks" {
 output "secondary_cidr_subnet_ids" {
   description = "IDs of subnets created from secondary CIDR blocks"
   value       = [for subnet in aws_subnet.secondary_cidr_private : subnet.id]
-}
-
-output "secondary_cidr_subnet_arns_map" {
-  description = "Map of secondary CIDR subnet ARNs with static keys (CIDR-AZ)"
-  value = {
-    for key, subnet in aws_subnet.secondary_cidr_private :
-    key => subnet.arn
-  }
 }
