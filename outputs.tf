@@ -40,8 +40,11 @@ output "non_tgw_subnet_arns_by_subnetset" {
       if substr(subnet.key, 0, length(set)) == set
     }
     },
-    { "protected" = { for key, subnet in aws_subnet.protected : key => subnet.arn }
-  })
+    { "protected" = { for key, subnet in aws_subnet.protected : key => subnet.arn } },
+    length(var.secondary_cidr_blocks) > 0 ? {
+      "general-secondary" = { for key, subnet in aws_subnet.secondary_cidr_private : key => subnet.arn }
+    } : {}
+  )
 }
 
 output "expanded_worker_subnets_assocation" {
@@ -78,4 +81,19 @@ output "private_route_tables" {
 
 output "vpc_flow_log" {
   value = aws_cloudwatch_log_group.default.name
+}
+
+output "vpc_cidr_block" {
+  description = "Primary VPC CIDR block"
+  value       = aws_vpc.vpc.cidr_block
+}
+
+output "secondary_cidr_blocks" {
+  description = "List of secondary CIDR blocks associated with the VPC"
+  value       = var.secondary_cidr_blocks
+}
+
+output "secondary_cidr_subnet_ids" {
+  description = "IDs of subnets created from secondary CIDR blocks"
+  value       = [for subnet in aws_subnet.secondary_cidr_private : subnet.id]
 }
