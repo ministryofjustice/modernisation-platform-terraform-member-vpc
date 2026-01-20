@@ -505,12 +505,3 @@ resource "aws_route_table_association" "secondary_cidr_subnets" {
   route_table_id = aws_route_table.route_tables["${local.secondary_cidr_subnets_with_keys[each.key].key}-${local.secondary_cidr_subnets_with_keys[each.key].type}"].id
   subnet_id      = each.value.id
 }
-
-# Network ACL associations for secondary CIDR subnets
-# Secondary subnets use the same NACLs as their corresponding primary subnet type
-resource "aws_network_acl_association" "secondary_cidr_subnets" {
-  for_each = aws_subnet.secondary_cidr_subnets
-
-  network_acl_id = local.secondary_cidr_subnets_with_keys[each.key].type == "protected" ? aws_network_acl.protected.id : aws_network_acl.nacl[local.secondary_cidr_subnets_with_keys[each.key].type].id
-  subnet_id      = each.value.id
-}
