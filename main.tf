@@ -120,12 +120,12 @@ locals {
     for cidr_block, cidr_set in local.expanded_secondary_cidr_subnets : [
       for set_index, set in cidr_set : [
         for cidr_index, cidr in set : {
-          key              = "general"
-          cidr             = cidr
-          az               = local.availability_zones[cidr_index]
-          type             = set_index == 0 ? "private" : (set_index == 1 ? "public" : "data")
-          group            = "general"
-          cidr_block_key   = cidr_block
+          key            = "general"
+          cidr           = cidr
+          az             = local.availability_zones[cidr_index]
+          type           = set_index == 0 ? "private" : (set_index == 1 ? "public" : "data")
+          group          = "general"
+          cidr_block_key = cidr_block
         }
       ]
     ]
