@@ -42,7 +42,10 @@ output "non_tgw_subnet_arns_by_subnetset" {
     },
     { "protected" = { for key, subnet in aws_subnet.protected : key => subnet.arn } },
     length(var.secondary_cidr_blocks) > 0 ? {
-      "general-secondary" = { for key, subnet in aws_subnet.secondary_cidr_private : key => subnet.arn }
+      "general-secondary" = {
+        for key, subnet in aws_subnet.secondary_cidr_subnets :
+        key => subnet.arn
+      }
     } : {}
   )
 }
@@ -95,5 +98,5 @@ output "secondary_cidr_blocks" {
 
 output "secondary_cidr_subnet_ids" {
   description = "IDs of subnets created from secondary CIDR blocks"
-  value       = [for subnet in aws_subnet.secondary_cidr_private : subnet.id]
+  value       = [for subnet in aws_subnet.secondary_cidr_subnets : subnet.id]
 }

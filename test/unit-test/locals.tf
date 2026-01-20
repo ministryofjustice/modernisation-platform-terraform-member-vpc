@@ -151,21 +151,30 @@ locals {
   )
 
   # Secondary CIDR blocks
-  # Create subnets for each secondary CIDR block across all availability zones
-  secondary_cidr_subnets = flatten([
-    for cidr_block in local.secondary_cidr_blocks : [
-      for index, az in local.availability_zones : {
-        cidr_block_key = cidr_block
-        cidr           = cidrsubnet(cidr_block, 3, index)
-        az             = az
-        index          = index
-      }
+  # All secondary CIDRs are treated as 'general' type and split into private/public/data subnets
+  expanded_secondary_cidr_subnets = {
+    for cidr_block in local.secondary_cidr_blocks :
+    cidr_block => chunklist(cidrsubnets(cidr_block, 3, 3, 3, 4, 4, 4, 4, 4, 4), 3)
+  }
+
+  secondary_cidr_subnets_assocation = flatten([
+    for cidr_block, cidr_set in local.expanded_secondary_cidr_subnets : [
+      for set_index, set in cidr_set : [
+        for cidr_index, cidr in set : {
+          key              = "general"
+          cidr             = cidr
+          az               = local.availability_zones[cidr_index]
+          type             = set_index == 0 ? "private" : (set_index == 1 ? "public" : "data")
+          group            = "general"
+          cidr_block_key   = cidr_block
+        }
+      ]
     ]
   ])
 
   secondary_cidr_subnets_with_keys = {
-    for subnet in local.secondary_cidr_subnets :
-    "${subnet.cidr_block_key}-${subnet.az}" => subnet
+    for subnet in local.secondary_cidr_subnets_assocation :
+    "${subnet.cidr_block_key}-${subnet.type}-${subnet.az}-secondary" => subnet
   }
 
 }

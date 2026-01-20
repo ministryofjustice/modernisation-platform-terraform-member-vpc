@@ -325,8 +325,8 @@ resource "aws_vpc_ipv4_cidr_block_association" "secondary" {
   vpc_id     = aws_vpc.vpc.id
 }
 
-# Create private subnets from secondary CIDR blocks
-resource "aws_subnet" "secondary_cidr_private" {
+# Create subnets from secondary CIDR blocks (private, public, data)
+resource "aws_subnet" "secondary_cidr_subnets" {
   for_each = local.secondary_cidr_subnets_with_keys
 
   availability_zone = each.value.az
@@ -336,50 +336,27 @@ resource "aws_subnet" "secondary_cidr_private" {
   tags = merge(
     local.tags_common,
     {
-      Name = "${local.tags_prefix}-general-private-secondary-${each.value.az}"
+      Name = "${local.tags_prefix}-${each.value.key}-${each.value.type}-secondary-${each.value.az}"
     }
   )
 
   depends_on = [aws_vpc_ipv4_cidr_block_association.secondary]
 }
 
-# Create route table for secondary CIDR subnets
-resource "aws_route_table" "secondary_cidr_private" {
-  for_each = toset(local.secondary_cidr_blocks)
+# Route table associations for secondary CIDR subnets
+# Secondary subnets use the same route tables as their corresponding primary subnet type
+resource "aws_route_table_association" "secondary_cidr_subnets" {
+  for_each = aws_subnet.secondary_cidr_subnets
 
-  vpc_id = aws_vpc.vpc.id
-
-  tags = merge(
-    local.tags_common,
-    {
-      Name = "${local.tags_prefix}-secondary-private-${each.value}"
-    }
-  )
-}
-
-# Associate route table with secondary CIDR subnets
-resource "aws_route_table_association" "secondary_cidr_private" {
-  for_each = aws_subnet.secondary_cidr_private
-
-  route_table_id = aws_route_table.secondary_cidr_private[local.secondary_cidr_subnets_with_keys[each.key].cidr_block_key].id
+  route_table_id = aws_route_table.route_tables["${local.secondary_cidr_subnets_with_keys[each.key].key}-${local.secondary_cidr_subnets_with_keys[each.key].type}"].id
   subnet_id      = each.value.id
 }
 
-# Create Network ACL for secondary CIDR subnets
-resource "aws_network_acl" "secondary_cidr_private" {
-  for_each = toset(local.secondary_cidr_blocks)
+# Network ACL associations for secondary CIDR subnets
+# Secondary subnets use the same NACLs as their corresponding primary subnet type
+resource "aws_network_acl_association" "secondary_cidr_subnets" {
+  for_each = aws_subnet.secondary_cidr_subnets
 
-  vpc_id = aws_vpc.vpc.id
-  subnet_ids = [
-    for key, subnet in aws_subnet.secondary_cidr_private :
-    subnet.id
-    if can(regex(each.value, subnet.cidr_block))
-  ]
-
-  tags = merge(
-    local.tags_common,
-    {
-      Name = "${local.tags_prefix}-secondary-private-${each.value}"
-    }
-  )
+  network_acl_id = local.secondary_cidr_subnets_with_keys[each.key].type == "protected" ? aws_network_acl.protected.id : aws_network_acl.nacl[local.secondary_cidr_subnets_with_keys[each.key].type].id
+  subnet_id      = each.value.id
 }
