@@ -44,7 +44,7 @@ variable "vpc_flow_log_iam_role" {
 }
 
 variable "secondary_cidr_blocks" {
-  description = "List of secondary CIDR blocks to associate with the VPC for additional subnet capacity"
+  description = "List of secondary CIDR blocks to associate with the VPC for additional subnet capacity. All secondary CIDRs are treated as 'general' type and split into private/public/data subnets."
   type        = list(string)
   default     = []
 

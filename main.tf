@@ -110,21 +110,30 @@ locals {
   custom_flow_log_format = "$${version} $${account-id} $${interface-id} $${srcaddr} $${dstaddr} $${srcport} $${dstport} $${protocol} $${packets} $${bytes} $${start} $${end} $${action} $${log-status} $${vpc-id} $${subnet-id} $${instance-id} $${tcp-flags} $${type} $${pkt-srcaddr} $${pkt-dstaddr} $${region} $${az-id} $${sublocation-type} $${sublocation-id} $${pkt-src-aws-service} $${pkt-dst-aws-service} $${flow-direction} $${traffic-path}"
 
   # Secondary CIDR blocks
-  # Create subnets for each secondary CIDR block across all availability zones
-  secondary_cidr_subnets = flatten([
-    for cidr_block in var.secondary_cidr_blocks : [
-      for index, az in local.availability_zones : {
-        cidr_block_key = cidr_block
-        cidr           = cidrsubnet(cidr_block, 3, index)
-        az             = az
-        index          = index
-      }
+  # All secondary CIDRs are treated as 'general' type and split into private/public/data subnets
+  expanded_secondary_cidr_subnets = {
+    for cidr_block in var.secondary_cidr_blocks :
+    cidr_block => chunklist(cidrsubnets(cidr_block, 3, 3, 3, 4, 4, 4, 4, 4, 4), 3)
+  }
+
+  secondary_cidr_subnets_assocation = flatten([
+    for cidr_block, cidr_set in local.expanded_secondary_cidr_subnets : [
+      for set_index, set in cidr_set : [
+        for cidr_index, cidr in set : {
+          key            = "general"
+          cidr           = cidr
+          az             = local.availability_zones[cidr_index]
+          type           = set_index == 0 ? "private" : (set_index == 1 ? "public" : "data")
+          group          = "general"
+          cidr_block_key = cidr_block
+        }
+      ]
     ]
   ])
 
   secondary_cidr_subnets_with_keys = {
-    for subnet in local.secondary_cidr_subnets :
-    "${subnet.cidr_block_key}-${subnet.az}" => subnet
+    for subnet in local.secondary_cidr_subnets_assocation :
+    "${subnet.cidr_block_key}-${subnet.type}-${subnet.az}-secondary" => subnet
   }
 }
 
@@ -470,8 +479,8 @@ resource "aws_vpc_ipv4_cidr_block_association" "secondary" {
   vpc_id     = aws_vpc.vpc.id
 }
 
-# Create private subnets from secondary CIDR blocks
-resource "aws_subnet" "secondary_cidr_private" {
+# Create subnets from secondary CIDR blocks (private, public, data)
+resource "aws_subnet" "secondary_cidr_subnets" {
   for_each = local.secondary_cidr_subnets_with_keys
 
   availability_zone = each.value.az
@@ -481,215 +490,18 @@ resource "aws_subnet" "secondary_cidr_private" {
   tags = merge(
     var.tags_common,
     {
-      Name = "${var.tags_prefix}-general-private-secondary-${each.value.az}"
+      Name = "${var.tags_prefix}-${each.value.key}-${each.value.type}-secondary-${each.value.az}"
     }
   )
 
   depends_on = [aws_vpc_ipv4_cidr_block_association.secondary]
 }
 
-# Create route table for secondary CIDR subnets
-resource "aws_route_table" "secondary_cidr_private" {
-  for_each = toset(var.secondary_cidr_blocks)
+# Route table associations for secondary CIDR subnets
+# Secondary subnets use the same route tables as their corresponding primary subnet type
+resource "aws_route_table_association" "secondary_cidr_subnets" {
+  for_each = aws_subnet.secondary_cidr_subnets
 
-  vpc_id = aws_vpc.vpc.id
-
-  tags = merge(
-    var.tags_common,
-    {
-      Name = "${var.tags_prefix}-secondary-private-${each.value}"
-    }
-  )
-}
-
-# Associate route table with secondary CIDR subnets
-resource "aws_route_table_association" "secondary_cidr_private" {
-  for_each = aws_subnet.secondary_cidr_private
-
-  route_table_id = aws_route_table.secondary_cidr_private[local.secondary_cidr_subnets_with_keys[each.key].cidr_block_key].id
+  route_table_id = aws_route_table.route_tables["${local.secondary_cidr_subnets_with_keys[each.key].key}-${local.secondary_cidr_subnets_with_keys[each.key].type}"].id
   subnet_id      = each.value.id
-}
-
-# Route all traffic via Transit Gateway for secondary CIDR subnets
-resource "aws_route" "secondary_cidr_default_via_tgw" {
-  for_each = toset(var.secondary_cidr_blocks)
-
-  route_table_id         = aws_route_table.secondary_cidr_private[each.value].id
-  destination_cidr_block = "0.0.0.0/0"
-  transit_gateway_id     = var.transit_gateway_id
-}
-
-# Create Network ACL for secondary CIDR subnets
-resource "aws_network_acl" "secondary_cidr_private" {
-  for_each = toset(var.secondary_cidr_blocks)
-
-  vpc_id = aws_vpc.vpc.id
-  subnet_ids = [
-    for key, subnet in aws_subnet.secondary_cidr_private :
-    subnet.id
-    if can(regex(each.value, subnet.cidr_block))
-  ]
-
-  tags = merge(
-    var.tags_common,
-    {
-      Name = "${var.tags_prefix}-secondary-private-${each.value}"
-    }
-  )
-}
-
-# NACL Rules for secondary CIDR subnets
-# Allow traffic within the primary VPC CIDR
-resource "aws_network_acl_rule" "secondary_allow_primary_vpc_in" {
-  for_each = toset(var.secondary_cidr_blocks)
-
-  cidr_block     = var.subnet_sets["general"]
-  egress         = false
-  network_acl_id = aws_network_acl.secondary_cidr_private[each.value].id
-  protocol       = "-1"
-  rule_action    = "allow"
-  rule_number    = 1000
-}
-
-resource "aws_network_acl_rule" "secondary_allow_primary_vpc_out" {
-  for_each = toset(var.secondary_cidr_blocks)
-
-  cidr_block     = var.subnet_sets["general"]
-  egress         = true
-  network_acl_id = aws_network_acl.secondary_cidr_private[each.value].id
-  protocol       = "-1"
-  rule_action    = "allow"
-  rule_number    = 1000
-}
-
-# Allow traffic within the secondary CIDR block itself
-resource "aws_network_acl_rule" "secondary_allow_secondary_vpc_in" {
-  for_each = toset(var.secondary_cidr_blocks)
-
-  cidr_block     = each.value
-  egress         = false
-  network_acl_id = aws_network_acl.secondary_cidr_private[each.value].id
-  protocol       = "-1"
-  rule_action    = "allow"
-  rule_number    = 1100
-}
-
-resource "aws_network_acl_rule" "secondary_allow_secondary_vpc_out" {
-  for_each = toset(var.secondary_cidr_blocks)
-
-  cidr_block     = each.value
-  egress         = true
-  network_acl_id = aws_network_acl.secondary_cidr_private[each.value].id
-  protocol       = "-1"
-  rule_action    = "allow"
-  rule_number    = 1100
-}
-
-# Allow RFC1918 private address space
-resource "aws_network_acl_rule" "secondary_allow_10_0_0_0_in" {
-  for_each = toset(var.secondary_cidr_blocks)
-
-  cidr_block     = "10.0.0.0/8"
-  egress         = false
-  network_acl_id = aws_network_acl.secondary_cidr_private[each.value].id
-  protocol       = "-1"
-  rule_action    = "allow"
-  rule_number    = 4000
-}
-
-resource "aws_network_acl_rule" "secondary_allow_10_0_0_0_out" {
-  for_each = toset(var.secondary_cidr_blocks)
-
-  cidr_block     = "10.0.0.0/8"
-  egress         = true
-  network_acl_id = aws_network_acl.secondary_cidr_private[each.value].id
-  protocol       = "-1"
-  rule_action    = "allow"
-  rule_number    = 4000
-}
-
-resource "aws_network_acl_rule" "secondary_allow_172_16_0_0_in" {
-  for_each = toset(var.secondary_cidr_blocks)
-
-  cidr_block     = "172.16.0.0/12"
-  egress         = false
-  network_acl_id = aws_network_acl.secondary_cidr_private[each.value].id
-  protocol       = "-1"
-  rule_action    = "allow"
-  rule_number    = 4100
-}
-
-resource "aws_network_acl_rule" "secondary_allow_172_16_0_0_out" {
-  for_each = toset(var.secondary_cidr_blocks)
-
-  cidr_block     = "172.16.0.0/12"
-  egress         = true
-  network_acl_id = aws_network_acl.secondary_cidr_private[each.value].id
-  protocol       = "-1"
-  rule_action    = "allow"
-  rule_number    = 4100
-}
-
-resource "aws_network_acl_rule" "secondary_allow_192_168_0_0_in" {
-  for_each = toset(var.secondary_cidr_blocks)
-
-  cidr_block     = "192.168.0.0/16"
-  egress         = false
-  network_acl_id = aws_network_acl.secondary_cidr_private[each.value].id
-  protocol       = "-1"
-  rule_action    = "allow"
-  rule_number    = 4200
-}
-
-resource "aws_network_acl_rule" "secondary_allow_192_168_0_0_out" {
-  for_each = toset(var.secondary_cidr_blocks)
-
-  cidr_block     = "192.168.0.0/16"
-  egress         = true
-  network_acl_id = aws_network_acl.secondary_cidr_private[each.value].id
-  protocol       = "-1"
-  rule_action    = "allow"
-  rule_number    = 4200
-}
-
-# Allow high ports inbound from internet (for responses to outbound connections)
-resource "aws_network_acl_rule" "secondary_high_ports_in" {
-  for_each = toset(var.secondary_cidr_blocks)
-
-  cidr_block     = "0.0.0.0/0"
-  egress         = false
-  from_port      = 49152
-  network_acl_id = aws_network_acl.secondary_cidr_private[each.value].id
-  protocol       = "tcp"
-  rule_action    = "allow"
-  rule_number    = 5300
-  to_port        = 65535
-}
-
-# Allow HTTPS outbound to internet
-resource "aws_network_acl_rule" "secondary_https_out" {
-  for_each = toset(var.secondary_cidr_blocks)
-
-  cidr_block     = "0.0.0.0/0"
-  egress         = true
-  from_port      = 443
-  network_acl_id = aws_network_acl.secondary_cidr_private[each.value].id
-  protocol       = "tcp"
-  rule_action    = "allow"
-  rule_number    = 5100
-  to_port        = 443
-}
-
-# Allow HTTP outbound to internet
-resource "aws_network_acl_rule" "secondary_http_out" {
-  for_each = toset(var.secondary_cidr_blocks)
-
-  cidr_block     = "0.0.0.0/0"
-  egress         = true
-  from_port      = 80
-  network_acl_id = aws_network_acl.secondary_cidr_private[each.value].id
-  protocol       = "tcp"
-  rule_action    = "allow"
-  rule_number    = 5200
-  to_port        = 80
 }

@@ -84,7 +84,7 @@ output "secondary_cidr_blocks" {
 output "secondary_cidr_subnet_ids" {
   description = "Secondary CIDR subnet IDs"
   value = [
-    for key, subnet in aws_subnet.secondary_cidr_private :
+    for key, subnet in aws_subnet.secondary_cidr_subnets :
     subnet.id
   ]
 }
