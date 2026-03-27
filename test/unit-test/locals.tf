@@ -10,7 +10,7 @@ data "http" "environments_file" {
 locals {
 
   application_name      = "testing"
-  vpc_flow_log_iam_role = "arn:aws:iam::${local.environment_management.account_ids["testing-test"]}:role/TestingTestMemberInfrastructureAccess"
+  vpc_flow_log_iam_role = "arn:aws:iam::${local.environment_management.account_ids["testing-test"]}:role/MemberInfrastructureAccess"
 
   environment_management = jsondecode(data.aws_secretsmanager_secret_version.environment_management.secret_string)
 
