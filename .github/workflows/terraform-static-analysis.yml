@@ -51,5 +51,4 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         scan_type: full
-        tfsec_exclude: AWS089, AWS099, AWS009, AWS097, AWS018
         checkov_exclude: CKV_GIT_1
