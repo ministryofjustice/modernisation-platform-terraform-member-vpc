@@ -282,8 +282,8 @@ resource "aws_vpc_endpoint" "ssm_interfaces" {
   service_name      = each.value
   vpc_endpoint_type = "Interface"
   subnet_ids = [
-    for az in local.availability_zones :
-    aws_subnet.protected["protected-${az}"].id
+    for subnet in aws_subnet.protected :
+    subnet.id
   ]
   security_group_ids = [aws_security_group.endpoints.id]
 
