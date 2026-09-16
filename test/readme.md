@@ -18,7 +18,7 @@ go mod tidy
 
 Run the tests from within the `test` directory using the `testing-test` user credentials.
 
-Get the credentials from https://moj.awsapps.com selecting the testing-test AWS account.
+Get the credentials from <https://moj.awsapps.com> selecting the testing-test AWS account.
 
 Copy the credentials and export them by pasting them into the terminal from which you will run the tests.
 
@@ -42,5 +42,5 @@ ok      github.com/ministryofjustice/modernisation-platform-terraform-member-vpc
 
 ## References
 
-1. https://terratest.gruntwork.io/docs/getting-started/quick-start/
-2. https://github.com/ministryofjustice/modernisation-platform-terraform-member-vpc/blob/main/.github/workflows/go-terratest.yml
+1. <https://terratest.gruntwork.io/docs/getting-started/quick-start/>
+2. <https://github.com/ministryofjustice/modernisation-platform-terraform-member-vpc/blob/main/.github/workflows/go-terratest.yml>
