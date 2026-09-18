@@ -14,7 +14,7 @@ Then run:
 go mod tidy
 ```
 
-# How to run the tests locally
+## How to run the tests locally
 
 Run the tests from within the `test` directory using the `testing-test` user credentials.
 
